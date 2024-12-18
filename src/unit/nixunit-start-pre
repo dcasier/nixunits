@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+. NIXUNITS/bin/common.sh
+
+LOG=$(log "$NAME")
+
+echo "[$(date)] - - - START PRE - - - $NAME" >> "$LOG"
+echo >> "$LOG"
+

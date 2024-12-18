@@ -7,23 +7,29 @@ usage() {
   echo "Usage : nixunits create <container id> [options]"
   echo "Available options:"
   echo "  -a  <json list> capabilities allowed"
-  echo "  -cc <value>     service config content"
-  echo "  -cf <value>     service file"
-  echo "  -cn <value>     service name"
-  echo "  -6  <value>     IPv6"
-  echo "  -H6 <value>     host IPv6"
-  echo "  -R6 <value>     IPv6 route"
-  echo "  -4  <value>     IPv4"
-  echo "  -H4 <value>     host IPv4"
-  echo "  -R4 <value>     IPv4 route"
+  echo "  -cc <service config content>"
+  echo "  -cf <service file>"
+  echo "  -cn <service name>"
+  echo "  -i  <interface>"
+  echo "  -4  <IPv4>"
+  echo "  -H4 <host IPv4>"
+  echo "  -R4 <IPv4 route>"
+  echo "  -6  [IPv6] "
+  echo "  -H6 <host IPv6>"
+  echo "  -R6 <IPv6 route>"
   echo "  -f  force ?"
   echo "  -h, --help"
   echo "  -r  restart ?"
   echo "  -s  start ?"
   echo
   echo "Examples:"
-  echo " nixunits create my_container -6 'fc00::a:2/64' -H6 'fc00::a:1/64'"
-  echo " nixunits create my_container -4 192.168.1.1/24 -R4 192.168.1.254"
+  echo " nixunits create my_wordpress -cn wordpress  -6 '2001:bc8:a:b:c:d:e:1/64' -i link1 -R6 'fe80::1'"
+  echo " nixunits create my_pg        -cn postgresql -6 'fc00::a:2' -H6 'fc00::a:1'"
+  echo " nixunits create my_mariadb   -cn mysql      -4 192.168.1.1 -R4 192.168.1.254"
+  echo
+  echo "Auto generated IPv6, from name (private network only):"
+  echo " nixunits create my_nc -cn nextcloud -6"
+
   test -n "$1" && exit "$1"
   exit 0
 }
@@ -47,9 +53,8 @@ while getopts "4:6a:c:f:i:n:H:R:hsr" opt; do
         ip6=$next_arg
         OPTIND=$((OPTIND + 1))
       else
-        _ip6_crc32=$(name_to_ipv6_crc32 $id)
-        hostIp6="${_ip6_crc32}:1"
-        ip6="${_ip6_crc32}:2"
+        ip6=$(ip6_crc32 "$id")
+        hostIp6=$(ip6_crc32_host "$id")
       fi;;
     a) CAPS=$OPTARG;;
     c)
@@ -101,11 +106,12 @@ if [ -n "$serviceFile" ] || [ -n "$serviceContent" ]
 then
   if [ -n "$serviceFile" ]
   then
-    install "$serviceFile" "$OUT_VAR"
+    install "$serviceFile" "$OUT_VAR/unit.nix"
   else
     echo "$serviceContent" > "$OUT_VAR/unit.nix"
   fi
 else
+  test -z "$serviceName" && usage 1
   _args+=" --argstr service $serviceName"
 fi
 

@@ -1,4 +1,4 @@
-_VAR="/var/lib/nixunits/containers/"
+_VAR="/var/lib/nixunits/containers"
 
 
 fileConf() {
@@ -20,15 +20,23 @@ in_nixos_failed() {
   fi
 }
 
+ip6_crc32() {
+  echo "$(_ip6_crc32 $1):2"
+}
+
+ip6_crc32_host() {
+  echo "$(_ip6_crc32 $1):1"
+}
+
 log() {
   echo "$_VAR/$1/unit.log"
 }
 
-name_to_ipv6_crc32() {
-  _crc32=$(echo -n "$1" | gzip -c | tail -c8 | head -c4 | hexdump -e '"%01x"')
-  echo "fc00::${_crc32:0:4}:${_crc32:4:8}"
-}
-
 out_var() {
   echo "$_VAR/$1"
+}
+
+_ip6_crc32() {
+  _crc32=$(echo -n "$1" | gzip -c | tail -c8 | head -c4 | hexdump -e '"%01x"')
+  echo "fc00::${_crc32:0:4}:${_crc32:4:8}"
 }

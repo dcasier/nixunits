@@ -20,21 +20,22 @@ let
   caps_allow = builtins.fromJSON(caps);
 
   config = let
-    _custom = global.fileCustom service;
-    _service = global.fileService service;
-    _target = global.fileNix id;
-    _file = if builtins.pathExists _target then
-        _target
-    else
-        if builtins.pathExists _custom then
+    _file =
+      if service == null then
+        global.fileNix id
+      else
+        let
+          _custom = global.fileCustom service;
+        in if builtins.pathExists _custom then
           _custom
         else
-          _service;
-    _exists = (builtins.pathExists _file);
+          global.fileService service;
   in
-    if _exists then
+    if (builtins.pathExists _file) then
       builtins.trace ''Import : ${_file}'' import _file {inherit lib pkgs;}
-    else {
+    else let
+       _ = lib.assertMgs (service != null) "Service undefined";
+    in {
       services.${service}.enable = true;
     };
 

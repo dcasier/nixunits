@@ -14,14 +14,13 @@ let
     inherit pkgs;
   };
 
-  scriptStartPost = "nixunit-start-post";
-
   serviceConfig = {
     # ExecReload = TODO
     Delegate = true;
     Environment="SYSTEMD_NSPAWN_UNIFIED_HIERARCHY=1";
     ExecStart="systemd-nspawn --machine=%i -D ${global.pathRoot "%i"} --notify-ready=yes --kill-signal=SIGRTMIN+3 $EXTRA_NSPAWN_FLAGS \${SYSTEM_PATH}/init";
-    ExecStartPost="${nixunits}/unit/${scriptStartPost}";
+    ExecStartPre="${nixunits}/unit/nixunit-start-pre";
+    ExecStartPost="${nixunits}/unit/nixunit-start-post";
     EnvironmentFile = "${global.fileConf "%i"}";
     KillMode = "mixed";
     Restart = "on-failure";

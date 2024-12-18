@@ -16,7 +16,7 @@ nsenter_eval() {
 LOG=$(log "$NAME")
 NS_PID=$(ps --ppid "$MAINPID" -o pid h)
 
-echo "[$(date)] - - - START POST - - - $NAME" > "$LOG"
+echo "[$(date)] - - - START POST - - - $NAME" >> "$LOG"
 
 if [ -z "$INTERFACE" ] && { [ -n "$IP4" ] && [ -n "$HOST_IP4" ] || [ -n "$IP6" ] && [ -n "$HOST_IP6" ]; }
 then

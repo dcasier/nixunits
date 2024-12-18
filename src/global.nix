@@ -33,7 +33,12 @@ let
   cfgUnit = name: cfg: security.cfgValid cfg;
 
   configExtra = {config, ...}: {
-    boot.isContainer = true;
+    boot = {
+      isContainer = true;
+      postBootCommands = ''
+        ${pkgs.libcap}/bin/capsh --print
+      '';
+    };
     # networking.hostName = mkDefault name;
     networking.useDHCP = false;
     nixpkgs.pkgs = pkgs;
