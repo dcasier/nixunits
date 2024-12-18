@@ -1,0 +1,54 @@
+#!/bin/sh
+set -e
+
+usage() {
+  echo "Usage : $0 action [options]"
+  echo
+  echo "Available actions:"
+  echo "  create"
+  echo "  delete"
+  echo "  list"
+  echo "  start"
+  echo "  * : wrapper => machinectl \$@"
+  echo "  h, help"
+  echo "  <action> h, help"
+  echo
+  exit 0
+}
+
+ACTION="$1"
+test -z "$ACTION" && machinectl && exit 0
+shift
+
+case "$ACTION" in
+  create)
+    NIXUNITS/bin/create.sh "$@"
+    ;;
+  delete)
+    NIXUNITS/bin/delete.sh "$@"
+    ;;
+  list)
+    echo "Exists : "
+    ls -1 /var/lib/nixunits/
+    echo
+    echo "=> machinectl list"
+    machinectl list
+    ;;
+  nsenter)
+    NIXUNITS/bin/nsenter.sh "$@"
+    ;;
+  reboot)
+    systemctl restart "nixunits@$1"
+    ;;
+  start)
+    systemctl start "nixunits@$1"
+    ;;
+  h|help)
+    usage
+    ;;
+  *)
+    echo "=> machinectl $ACTION $*"
+    # shellcheck disable=SC2068
+    machinectl "$ACTION" $@
+    ;;
+esac
