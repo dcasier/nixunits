@@ -32,7 +32,7 @@ case "$ACTION" in
     ip6_crc32 "$1";;
   list)
     echo "Exists : "
-    ls -1 /var/lib/nixunits/
+    ls -1 /var/lib/nixunits/containers
     echo
     echo "=> machinectl list"
     machinectl list

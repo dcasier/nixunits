@@ -24,11 +24,14 @@ usage() {
   echo
   echo "Examples:"
   echo " nixunits create my_wordpress -cn wordpress  -6 '2001:bc8:a:b:c:d:e:1/64' -i link1 -R6 'fe80::1'"
-  echo " nixunits create my_pg        -cn postgresql -6 'fc00::a:2' -H6 'fc00::a:1'"
-  echo " nixunits create my_mariadb   -cn mysql      -4 192.168.1.1 -R4 192.168.1.254"
+  echo " nixunits create my_pg1       -cn postgresql -6 'fc00::a:2' -H6 'fc00::a:1'"
+  echo " nixunits create my_pg2       -cn postgresql -4 192.168.1.1 -R4 192.168.1.254"
   echo
   echo "Auto generated IPv6, from name (private network only):"
   echo " nixunits create my_nc -cn nextcloud -6"
+  echo
+  echo " nixunits create mysql -cn mysql -6 -s -a '[\"CAP_DAC_OVERRIDE\"]'"
+
 
   test -n "$1" && exit "$1"
   exit 0

@@ -30,11 +30,11 @@
 in {
   flags = cap_allow: let
     CAPS = subtractLists cap_allow [
-    # "CAP_DAC_OVERRIDE"
-    # "CAP_SETFCAP"
-    # "CAP_SETPCAP"
       "CAP_AUDIT_WRITE"
       "CAP_AUDIT_CONTROL"
+      # TODO start first without and second with (files permission setting) ?
+      # update process ?
+      # "CAP_DAC_OVERRIDE"
       "CAP_DAC_READ_SEARCH"
       "CAP_IPC_LOCK"
       "CAP_IPC_OWNER"
@@ -45,6 +45,7 @@ in {
       "CAP_NET_ADMIN"
       "CAP_NET_BROADCAST"
       "CAP_NET_RAW"
+      # "CAP_SYS_CHROOT"
       "CAP_SYS_NICE"
       "CAP_SYS_ADMIN"
       "CAP_SYS_BOOT"
@@ -56,6 +57,16 @@ in {
       "CAP_SYS_RESOURCE"
       "CAP_SYS_TIME"
       "CAP_SYS_TTY_CONFIG"
+
+      # "CAP_CHOWN"
+      # "CAP_FOWNER"
+      # "CAP_FSETID"
+      # "CAP_KILL"
+      # "CAP_SETFCAP"
+      # "CAP_SETPCAP"
+      # "CAP_SETGID"
+      # "CAP_SETUID"
+      # "CAP_NET_BIND_SERVICE"
     ];
   in [
     "--no-new-privileges=yes"
