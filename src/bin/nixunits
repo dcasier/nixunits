@@ -39,7 +39,7 @@ case "$ACTION" in
     ;;
   nsenter)
     NIXUNITS/bin/nsenter.sh "$@";;
-  reboot)
+  restart|reboot)
     systemctl restart "nixunits@$1";;
   start)
     systemctl start "nixunits@$1";;
