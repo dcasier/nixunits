@@ -18,7 +18,7 @@ NS_PID=$(ps --ppid "$MAINPID" -o pid h)
 
 echo "[$(date)] - - - START POST - - - $NAME" >> "$LOG"
 
-if [ -z "$INTERFACE" ] && { [ -n "$IP4" ] && [ -n "$HOST_IP4" ] || [ -n "$IP6" ] && [ -n "$HOST_IP6" ]; }
+if [ -z "$INTERFACE" ] && { { [ -n "$IP4" ] && [ -n "$HOST_IP4" ]; } || { [ -n "$IP6" ] && [ -n "$HOST_IP6" ]; }; }
 then
   if_infos=$(nsenter_eval "ip -j link" | jq '.[] | select(.ifname != "lo")')
   host_interface_id=$(echo "$if_infos" | jq '.link_index')

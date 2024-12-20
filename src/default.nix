@@ -1,5 +1,6 @@
 {
-  caps ? "[]"
+  args ? "{}"
+, caps ? "[]"
 , hostIp4 ? ""
 , hostIp6 ? ""
 , id
