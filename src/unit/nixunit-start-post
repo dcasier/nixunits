@@ -13,10 +13,10 @@ nsenter_eval() {
   nsenter --target $NS_PID --mount --uts --ipc --net --pid -- /bin/sh -c "$1" 2>> "$LOG"
 }
 
-LOG=$(log "$NAME")
-NS_PID=$(ps --ppid "$MAINPID" -o pid h)
-
 echo "[$(date)] - - - START POST - - - $NAME" >> "$LOG"
+
+LOG=$(log "$NAME")
+NS_PID=$(host_eval ps --ppid "$MAINPID" -o pid h)
 
 if [ -z "$INTERFACE" ] && { { [ -n "$IP4" ] && [ -n "$HOST_IP4" ]; } || { [ -n "$IP6" ] && [ -n "$HOST_IP6" ]; }; }
 then
