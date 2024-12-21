@@ -1,0 +1,29 @@
+#!/bin/bash
+
+STATUS_1_INITIAL=$(cat <<EOF
+{
+  "id": "8643a4f5-c137-44ef-953e-e8b4aca9f924",
+  "os": "",
+  "status": "initial",
+  "version": "",
+  "data_exist": false,
+  "config_exist": false,
+  "declared_in_nixos": false,
+  "addresses": []
+}
+EOF
+)
+
+STATUS_1_CREATED=$(cat <<EOF
+{
+  "id": "8643a4f5-c137-44ef-953e-e8b4aca9f924",
+  "os": "",
+  "status": "created",
+  "version": "",
+  "data_exist": true,
+  "config_exist": true,
+  "declared_in_nixos": false,
+  "addresses": []
+}
+EOF
+)

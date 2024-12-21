@@ -7,11 +7,13 @@ stdenv.mkDerivation rec {
   src = ./.;
 
   buildPhase = with pkgs; ''
-    mkdir -p $out/bin $out/services $out/unit
+    mkdir -p $out/bin $out/services $out/tests $out/unit
     cp $src/*.nix $out/
     cp $src/bin/* $out/bin/
     cp $src/services/* $out/services/
+    cp $src/tests/* $out/tests/
     cp $src/unit/* $out/unit/
+    ln -s ../tests/nixunits_tests $out/bin/
 
     patchShebangs $out/bin
 

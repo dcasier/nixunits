@@ -38,6 +38,7 @@ done
 
 CONF_EXIST=false
 DATA_EXIST=false
+DECLARED_IN_NIXOS=false
 STATUS=$(test -d "$(unit_dir "$id")" && echo "created" || echo "initial")
 STARTED_INFO=$(machinectl -o json | jq ".[] | select(.machine == \"$id\")")
 if [ "$STARTED_INFO" != "" ]
@@ -50,7 +51,13 @@ fi
 
 if [ "$STATUS" != "initial" ]
 then
-  CONF_EXIST=$(test -f "$(unit_conf "$id")" && echo "true" || echo "false")
+  if [ -f "$(unit_conf "$id")" ]
+  then
+    CONF_EXIST="true"
+    DECLARED_IN_NIXOS=$(in_nixos "$id" && echo "true" || echo "false")
+  else
+    CONF_EXIST="false"
+  fi
   DATA_EXIST=$(test -d "$(unit_root "$id")" && echo "true" || echo "false")
 fi
 
@@ -60,6 +67,7 @@ then
   echo "  status : $STATUS"
   if [ "$STATUS" != "initial" ]
   then
+    echo "  declared in nixos configuration : $DECLARED_IN_NIXOS"
     echo "  config exist : $CONF_EXIST"
     echo "  data exist : $DATA_EXIST"
     if [ "$STATUS" == "started" ]
@@ -75,12 +83,13 @@ then
   fi
 else
   echo "{
-    \"id\": \"$id\",
-    \"status\": \"$STATUS\",
-    \"config_exist\": \"$CONF_EXIST\",
-    \"data_exist\": \"$DATA_EXIST\",
-    \"os\": \"$OS\",
-    \"version\": \"$VERSION\",
-    \"addresses\": [$(for a in $ADDRESSES;do echo -n \"$a\"; echo -n ","; done | sed 's/,$//')]
-  }"
+  \"id\": \"$id\",
+  \"os\": \"$OS\",
+  \"status\": \"$STATUS\",
+  \"version\": \"$VERSION\",
+  \"data_exist\": $DATA_EXIST,
+  \"config_exist\": $CONF_EXIST,
+  \"declared_in_nixos\": $DECLARED_IN_NIXOS,
+  \"addresses\": [$(for a in $ADDRESSES;do echo -n \""$a"\"; echo -n ","; done | sed 's/,$//')]
+}"
 fi

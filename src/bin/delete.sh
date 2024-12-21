@@ -26,16 +26,17 @@ GC=false
 
 while getopts "fghr" opt; do
   case $opt in
-    f) FORCE=true;;
-    r) RECURSIVE=$OPTARG;;
-    g) GC=$OPTARG;;
+    f)
+      FORCE=true;;
+    r)
+      RECURSIVE=$OPTARG;;
+    g)
+      GC=$OPTARG;;
     h)
-      usage
-      ;;
+      usage;;
     \?)
       echo "Invalid option : -$OPTARG" >&2
-      usage 1
-      ;;
+      usage 1;;
   esac
 done
 
@@ -66,7 +67,10 @@ else
   do
     rm "$file"
   done
-  test "$(find "$CONTAINER_DIR" |wc -l)" = 1 && rmdir "$CONTAINER_DIR"
+  if [ "$(find "$CONTAINER_DIR" |wc -l)" = 2 ];then
+    rmdir "$(unit_root "$id")"
+    rmdir "$CONTAINER_DIR"
+  fi
 fi
 
 if $GC

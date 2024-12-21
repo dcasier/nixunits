@@ -47,7 +47,8 @@ RESTART=false
 # shellcheck disable=SC2213
 while getopts "4:6a:c:f:i:n:H:R:hsr" opt; do
   case $opt in
-    4) ip4=$OPTARG;;
+    4)
+      ip4=$OPTARG;;
     6)
       # shellcheck disable=SC2124
       next_arg="${@:$OPTIND:1}"
@@ -58,7 +59,8 @@ while getopts "4:6a:c:f:i:n:H:R:hsr" opt; do
         ip6=$(ip6_crc32 "$id")
         hostIp6=$(ip6_crc32_host "$id")
       fi;;
-    a) CAPS=$OPTARG;;
+    a)
+      CAPS=$OPTARG;;
     c)
       case $OPTARG in
         c) serviceContent="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
@@ -67,9 +69,12 @@ while getopts "4:6a:c:f:i:n:H:R:hsr" opt; do
         *) echo "Invalid option for -s. Use c, f or n."; usage 1;;
       esac
       ;;
-    i) interface=$OPTARG;;
-    r) RESTART=true;;
-    s) START=true;;
+    i)
+      interface=$OPTARG;;
+    r)
+      RESTART=true;;
+    s)
+      START=true;;
     H)
       case $OPTARG in
         4) hostIp4="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
@@ -84,14 +89,13 @@ while getopts "4:6a:c:f:i:n:H:R:hsr" opt; do
         *) echo "Invalid option for -R. Use 4 or 6."; usage 1;;
       esac
       ;;
-    f) FORCE=true;;
+    f)
+      FORCE=true;;
     h)
-      usage
-      ;;
+      usage;;
     \?)
       echo "Invalid option : -$OPTARG" >&2
-      usage 1
-      ;;
+      usage 1;;
   esac
 done
 
