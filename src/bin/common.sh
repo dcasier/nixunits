@@ -1,16 +1,17 @@
 _VAR="/var/lib/nixunits/containers"
 
+unit_dir() { echo "$_VAR/$1"; }
 
-fileConf() {
-  echo "$_VAR/$1/unit.conf"
-}
+unit_root() { echo "$(unit_dir "$1")/root/"; }
+
+unit_conf() { echo "$(unit_dir "$1")/unit.conf"; }
 
 in_nixos() {
-   test "$(dirname $(readlink $(fileConf $1)))" = "/etc/nixunits"
+   test "$(dirname "$(readlink "$(unit_conf "$1")")")" = "/etc/nixunits"
 }
 
 in_nixos_failed() {
-  if [ -d "$(out_var $1)" ]
+  if [ -d "$(unit_dir "$1")" ]
   then
     if in_nixos "$1"
     then
@@ -21,19 +22,15 @@ in_nixos_failed() {
 }
 
 ip6_crc32() {
-  echo "$(_ip6_crc32 $1):2"
+  echo "$(_ip6_crc32 "$1"):2"
 }
 
 ip6_crc32_host() {
-  echo "$(_ip6_crc32 $1):1"
+  echo "$(_ip6_crc32 "$1"):1"
 }
 
 log() {
-  echo "$_VAR/$1/unit.log"
-}
-
-out_var() {
-  echo "$_VAR/$1"
+  echo "$(unit_dir "$1")/unit.log"
 }
 
 _ip6_crc32() {

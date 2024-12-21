@@ -21,7 +21,7 @@ let
     ExecStart="systemd-nspawn --machine=%i -D ${global.pathRoot "%i"} --notify-ready=yes --kill-signal=SIGRTMIN+3 $EXTRA_NSPAWN_FLAGS \${SYSTEM_PATH}/init";
     ExecStartPre="${nixunits}/unit/nixunit-start-pre";
     ExecStartPost="${nixunits}/unit/nixunit-start-post";
-    EnvironmentFile = "${global.fileConf "%i"}";
+    EnvironmentFile = "${global.unitConf "%i"}";
     KillMode = "mixed";
     Restart = "on-failure";
     # Note that on reboot, systemd-nspawn returns 133, so this
@@ -80,13 +80,13 @@ in
       targets.multi-user.wants = [ "machines.target" ];
       tmpfiles.rules = [
        "d ${global.pathContainers} 2770 root ${moduleName}"
-       "d ${global.pathCustoms} 2770 root ${moduleName}"
+       "d ${global.pathRWServices} 2770 root ${moduleName}"
        "d ${global.pathVar} 2770 root ${moduleName}"
       ]
       ++ concatMap (name: [
         "d ${global.pathRoot name} 0755 root root - -"
-        "L+ ${global.pathServices} - - - - ${nixunits}/services"
-        "L+ ${global.fileConf name} - - - - /etc/${moduleName}/${name}.conf"
+        "L+ ${global.pathROServices} - - - - ${nixunits}/services"
+        "L+ ${global.unitConf name} - - - - /etc/${moduleName}/${name}.conf"
       ]) (attrNames config.${moduleName});
     };
     users.groups.nixunits = {};

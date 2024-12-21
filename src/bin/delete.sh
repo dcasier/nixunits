@@ -11,6 +11,8 @@ usage() {
   echo "  -r          recursive ?"
   echo "  -h, --help"
   echo
+
+  test -n "$1" && exit "$1"
   exit 0
 }
 
@@ -22,7 +24,6 @@ FORCE=false
 RECURSIVE=false
 GC=false
 
-# Analyse des options
 while getopts "fghr" opt; do
   case $opt in
     f) FORCE=true;;
@@ -33,19 +34,19 @@ while getopts "fghr" opt; do
       ;;
     \?)
       echo "Invalid option : -$OPTARG" >&2
-      usage
+      usage 1
       ;;
   esac
 done
 
 [ -z "$id" ] && echo "Container id missed" && exit 1
 
-OUT_VAR=$(out_var "$id")
+CONTAINER_DIR=$(unit_dir "$id")
 
 if ! $FORCE
 then
   in_nixos_failed "$id"
-  read -n 1 -p "Delete $OUT_VAR ? [y/N] : " AGREE
+  read -n 1 -p "Delete $CONTAINER_DIR ? [y/N] : " AGREE
   if ! expr "$AGREE" : '[yY]' >/dev/null
   then
       exit 0
@@ -58,14 +59,14 @@ systemctl stop "nixunits@$id"
 if $RECURSIVE
 then
   # set -ex
-  rm -fr "$OUT_VAR"
+  rm -fr "$CONTAINER_DIR"
 else
   # set -ex
-  find "$OUT_VAR" -maxdepth 1 -type f,l | while read -r file
+  find "$CONTAINER_DIR" -maxdepth 1 -type f,l | while read -r file
   do
     rm "$file"
   done
-  test "$(find "$OUT_VAR" |wc -l)" = 1 && rmdir "$OUT_VAR"
+  test "$(find "$CONTAINER_DIR" |wc -l)" = 1 && rmdir "$CONTAINER_DIR"
 fi
 
 if $GC

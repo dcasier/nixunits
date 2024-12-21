@@ -4,7 +4,7 @@ set -e
 . NIXUNITS/bin/common.sh
 
 usage() {
-  echo "Usage : $0 action [options]"
+  echo "Usage : nixunits action [options]"
   echo
   echo "Available actions:"
   echo "  create"
@@ -16,6 +16,8 @@ usage() {
   echo "  h, help"
   echo "  <action> h, help"
   echo
+
+  test -n "$1" && exit "$1"
   exit 0
 }
 
@@ -37,14 +39,16 @@ case "$ACTION" in
     echo "=> machinectl list"
     machinectl list
     ;;
-  nsenter)
+  nsenter|shell)
     NIXUNITS/bin/nsenter.sh "$@";;
   restart|reboot)
     systemctl restart "nixunits@$1";;
   start)
     systemctl start "nixunits@$1";;
+  status)
+    NIXUNITS/bin/status.sh "$@";;
   h|help)
-    usage;;
+    usage 0;;
   *)
     echo "=> machinectl $ACTION $*"
     # shellcheck disable=SC2068

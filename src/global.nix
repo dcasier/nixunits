@@ -1,15 +1,12 @@
 {lib, pkgs}: with lib;
 let
   moduleName = "nixunits";
-  fileConf = name: "${pathContainers}/${name}/unit.conf";
-  fileLock = name: "${pathContainers}/${name}/nixos.lock";
+  unitConf = name: "${pathContainers}/${name}/unit.conf";
   fileNix = name: "${pathContainers}/${name}/unit.nix";
-  fileCustom = name: "${pathCustoms}/${name}.nix";
-  fileService = name: "${pathServices}/${name}.nix";
   pathRoot = name: "${pathContainers}/${name}/root";
   pathContainers = "${pathVar}/containers";
-  pathCustoms = "${pathVar}/customs";
-  pathServices = "${pathVar}/services";
+  pathRWServices = "${pathVar}/rw_services";
+  pathROServices = "${pathVar}/ro_services";
   pathVar = "/var/lib/${moduleName}";
 
   assertions = {cfg, name}: [
@@ -106,9 +103,9 @@ let
 
 in with lib; {
   inherit conf
-    fileConf fileCustom fileLock fileNix fileService
+    unitConf fileNix
     moduleName
-    pathContainers pathCustoms pathRoot pathServices pathVar;
+    pathContainers pathRoot pathROServices pathRWServices pathVar;
   options = {
     nixunits = mkOption {
       type = types.attrsOf (types.submodule (

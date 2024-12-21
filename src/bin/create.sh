@@ -32,7 +32,6 @@ usage() {
   echo
   echo " nixunits create mysql -cn mysql -6 -s -a '[\"CAP_DAC_OVERRIDE\"]'"
 
-
   test -n "$1" && exit "$1"
   exit 0
 }
@@ -98,27 +97,27 @@ done
 
 test "$FORCE" != "true" && in_nixos_failed "$id"
 
-OUT_VAR=$(out_var "$id")
+CONTAINER_DIR=$(unit_dir "$id")
 
-test ! -d "$OUT_VAR" && install -m 2750 -d "$OUT_VAR"
-test -d "$OUT_VAR/root" || install -g root -d "$OUT_VAR/root"
-chmod g-s "$OUT_VAR/root"
+test ! -d "$CONTAINER_DIR" && install -m 2750 -d "$CONTAINER_DIR"
+test -d "$CONTAINER_DIR/root" || install -g root -d "$CONTAINER_DIR/root"
+chmod g-s "$CONTAINER_DIR/root"
 
 _args="--argstr id $id"
 if [ -n "$serviceFile" ] || [ -n "$serviceContent" ]
 then
   if [ -n "$serviceFile" ]
   then
-    install "$serviceFile" "$OUT_VAR/unit.nix"
+    install "$serviceFile" "$CONTAINER_DIR/unit.nix"
   else
-    echo "$serviceContent" > "$OUT_VAR/unit.nix"
+    echo "$serviceContent" > "$CONTAINER_DIR/unit.nix"
   fi
 else
   test -z "$serviceName" && usage 1
   _args+=" --argstr service $serviceName"
 fi
 
-[ -n "$CAPS" ]      && _args+=" --argstr caps $CAPS"
+[ -n "$CAPS" ]      && _args+=" --argstr caps_allow $CAPS"
 [ -n "$hostIp4" ]   && _args+=" --argstr hostIp4 $hostIp4"
 [ -n "$hostIp6" ]   && _args+=" --argstr hostIp6 $hostIp6"
 [ -n "$interface" ] && _args+=" --argstr interface $interface"
@@ -127,7 +126,7 @@ fi
 [ -n "$ip4route" ]  && _args+=" --argstr ip4route $ip4route"
 [ -n "$ip6route" ]  && _args+=" --argstr ip6route $ip6route"
 
-_args+=" --out-link $OUT_VAR/result"
+_args+=" --out-link $CONTAINER_DIR/result"
 
 echo "Container : $id"
 test -n "$interface" && echo "  interface: $interface"
@@ -143,8 +142,8 @@ echo "nix-build NIXUNITS/default.nix $_args"
 # shellcheck disable=SC2086
 nix-build NIXUNITS/default.nix $_args
 
-_link="$OUT_VAR/unit.conf"
-test -L "$_link" || ln -s "$OUT_VAR/result/etc/nixunits/$id.conf" "$_link"
+_link="$CONTAINER_DIR/unit.conf"
+test -L "$_link" || ln -s "$CONTAINER_DIR/result/etc/nixunits/$id.conf" "$_link"
 
 _unit="nixunits@$id"
 STARTED=$(systemctl -o json show "$_unit" --no-pager |grep ^SubState=running >/dev/null && echo true || echo false)
