@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -e -o pipefail
 shopt -s expand_aliases
 
 . NIXUNITS/tests/json_status
@@ -7,7 +7,7 @@ shopt -s expand_aliases
 ID="8643a4f5-c137-44ef-953e-e8b4aca9f924"
 PRIVATE_HOST_IP4="10.0.1.1"
 PRIVATE_IP4="10.0.2.2"
-PRIVATE_HOST_IP6="fc00::x:y:z:1"
+PRIVATE_HOST_IP6="fc00::d:e:f:1"
 PRIVATE_IP6="fc00::a:b:c:2"
 SERVICE_NAME="httpd"
 
@@ -15,13 +15,16 @@ SERVICE_NAME="httpd"
 
 DEBUG=0
 WITH_OVS=false
+STEP=0
 
-while getopts "do" opt; do
+while getopts "dos:" opt; do
   case $opt in
     d)
       DEBUG=1;;
     o)
       WITH_OVS=true;;
+    s)
+      STEP=$OPTARG;;
     *)
       echo "Invalid option"
       exit 1;;
@@ -30,28 +33,93 @@ done
 
 test $DEBUG == 1 && set -ex
 
-_err() {
-  echo "$1"
-  exit 1
+_err_msg=" ! ! ! ERROR - Invalid result ! ! !"
+
+_assert_equal() {
+  if [ "$1" != "$2" ]; then
+    echo "$_err_msg"
+    diff -u <(echo "$1") <(echo "$2")
+    exit 1
+  fi
 }
 
 alias _nixunits=NIXUNITS/bin/nixunits
 _json() { _nixunits status $ID -o json; }
 _jq() { _json | jq -r ".$1"; }
+_json_without_addr() { _json | jq 'del(.addresses)'; }
 
-test "$(_jq declared_in_nixos)" == true && _err "Declared in NixOS"
+_ping() {
+  if ! ping -c "$2" -W2 "$1"
+  then
+    >&2 echo "FAILED ping $1"
+    exit 1
+  fi
+}
+
+_step() {
+  if [ "$STEP" -le "$1" ]
+  then
+    echo " = = = Step $1 : $2 = = ="
+    true
+  else
+    false
+  fi
+}
+
+test "$(_jq declared_in_nixos)" == true && echo "Declared in NixOS" && exit 1
 
 # _nixunits delete $ID -frg > /dev/null
 _nixunits delete $ID -fr > /dev/null
+_assert_equal "$(_json)" "$STATUS_1_INITIAL"
 
+if _step 1 "initial create"; then
+  nixunits create $ID -cn $SERVICE_NAME >/dev/null
+  _assert_equal "$(_json)" "$STATUS_1_CREATED"
 
-test "$(_json)" != "$STATUS_1_INITIAL" && _err "Invalid initial status : $(_json)"
+  nixunits delete $ID -f
+  _assert_equal "$(_json)" "$STATUS_1_INITIAL"
+fi
 
-nixunits create $ID -cn $SERVICE_NAME >/dev/null
-test "$(_json)" != "$STATUS_1_CREATED" && _err "Invalid created status : $(_json)"
+if _step 2 "initial create -6"; then
+  nixunits create $ID -cn $SERVICE_NAME -6 >/dev/null
+  _assert_equal "$(_json)" "$STATUS_1_CREATED"
+fi
 
-nixunits delete $ID -f
-test "$(_json)" != "$STATUS_1_INITIAL" && _err "Invalid initial status : $(_json)"
+if _step 3 "IPv6 auto-generated"; then
+  nixunits create $ID -cn $SERVICE_NAME -6 -s >/dev/null
+  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
+  _ping "$(nixunits ip6_get "$ID")" 2 | grep -A 1 statistiques
+fi
 
-_json
+if _step 4 "Restart"; then
+  nixunits create $ID -cn $SERVICE_NAME -6 -r >/dev/null
+  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
+  _ping "$(nixunits ip6_get "$ID")" 3 | grep -A 1 statistiques
+  nixunits delete $ID -f
+  _assert_equal "$(_json)" "$STATUS_1_DELETED"
+fi
+
+if _step 5 "IPv4 restart"; then
+  nixunits create $ID -cn $SERVICE_NAME \
+    -4 "$PRIVATE_IP4" -H4 "$PRIVATE_HOST_IP4" -r >/dev/null
+  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
+  _ping "$PRIVATE_IP4" 1 | grep -A 1 statistiques
+  nixunits delete $ID -fr
+  _assert_equal "$(_json)" "$STATUS_1_INITIAL"
+fi
+
+if _step 6 "IPv4 and IPv6 restart"; then
+  nixunits create $ID -cn $SERVICE_NAME \
+    -4 "$PRIVATE_IP4" -H4 "$PRIVATE_HOST_IP4" \
+    -6 "$PRIVATE_IP6" -H6 "$PRIVATE_HOST_IP6" -r >/dev/null
+  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
+  _ping "$PRIVATE_IP4" 1 | grep -A 1 statistiques
+  _ping "$PRIVATE_IP6" 2 | grep -A 1 statistiques
+  nixunits delete $ID -fr
+  _assert_equal "$(_json)" "$STATUS_1_INITIAL"
+fi
+
+# nixunits delete $ID -f
+# test "$(_json)" != "$STATUS_1_INITIAL" && _err "Invalid initial status : $(_json)"
+
 
