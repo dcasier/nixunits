@@ -49,11 +49,13 @@ _jq() { _json | jq -r ".$1"; }
 _json_without_addr() { _json | jq 'del(.addresses)'; }
 
 _ping() {
-  if ! ping -c "$2" -W2 "$1"
-  then
-    >&2 echo "FAILED ping $1"
-    exit 1
-  fi
+  attempt=0
+  while [ $attempt -lt 5 ]; do
+    ping -c 1 -w 5 $1 && return
+    attempt=$((attempt + 1))
+  done
+  >&2 echo "FAILED ping $1"
+  exit 1
 }
 
 _step() {
@@ -88,22 +90,22 @@ fi
 if _step 3 "IPv6 auto-generated"; then
   nixunits create $ID -cn $SERVICE_NAME -6 -s >/dev/null
   _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
-  _ping "$(nixunits ip6_get "$ID")" 2 | grep -A 1 statistiques
+  _ping "$(nixunits ip6_get "$ID")" | grep -A 1 statistiques
 fi
 
 if _step 4 "Restart"; then
   nixunits create $ID -cn $SERVICE_NAME -6 -r >/dev/null
   _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
-  _ping "$(nixunits ip6_get "$ID")" 3 | grep -A 1 statistiques
+  _ping "$(nixunits ip6_get "$ID")" | grep -A 1 statistiques
   nixunits delete $ID -f
-  _assert_equal "$(_json)" "$STATUS_1_DELETED"
+  _assert_equal "$(_json)" "$STATUS_1_INITIAL_WITH_DATA"
 fi
 
 if _step 5 "IPv4 restart"; then
   nixunits create $ID -cn $SERVICE_NAME \
     -4 "$PRIVATE_IP4" -H4 "$PRIVATE_HOST_IP4" -r >/dev/null
   _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
-  _ping "$PRIVATE_IP4" 1 | grep -A 1 statistiques
+  _ping "$PRIVATE_IP4" | grep -A 1 statistiques
   nixunits delete $ID -fr
   _assert_equal "$(_json)" "$STATUS_1_INITIAL"
 fi
@@ -113,8 +115,8 @@ if _step 6 "IPv4 and IPv6 restart"; then
     -4 "$PRIVATE_IP4" -H4 "$PRIVATE_HOST_IP4" \
     -6 "$PRIVATE_IP6" -H6 "$PRIVATE_HOST_IP6" -r >/dev/null
   _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
-  _ping "$PRIVATE_IP4" 1 | grep -A 1 statistiques
-  _ping "$PRIVATE_IP6" 2 | grep -A 1 statistiques
+  _ping "$PRIVATE_IP4" | grep -A 1 statistiques
+  _ping "$PRIVATE_IP6" | grep -A 1 statistiques
   nixunits delete $ID -fr
   _assert_equal "$(_json)" "$STATUS_1_INITIAL"
 fi

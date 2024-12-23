@@ -43,11 +43,11 @@ STATUS_1_STARTED=$(cat <<EOF
 EOF
 )
 
-STATUS_1_DELETED=$(cat <<EOF
+STATUS_1_INITIAL_WITH_DATA=$(cat <<EOF
 {
   "id": "8643a4f5-c137-44ef-953e-e8b4aca9f924",
   "os": "",
-  "status": "deleted",
+  "status": "created",
   "version": "",
   "data_exist": true,
   "config_exist": false,

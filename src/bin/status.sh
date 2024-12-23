@@ -57,7 +57,7 @@ then
     DECLARED_IN_NIXOS=$(in_nixos "$id" && echo "true" || echo "false")
   else
     CONF_EXIST="false"
-    STATUS="deleted"
+    STATUS="created"
   fi
   DATA_EXIST=$(test -d "$(unit_root "$id")" && echo "true" || echo "false")
 fi
