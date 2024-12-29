@@ -5,8 +5,6 @@ let
   fileNix = name: "${pathContainers}/${name}/unit.nix";
   pathRoot = name: "${pathContainers}/${name}/root";
   pathContainers = "${pathVar}/containers";
-  pathRWServices = "${pathVar}/rw_services";
-  pathROServices = "${pathVar}/ro_services";
   pathVar = "/var/lib/${moduleName}";
 
   assertions = {cfg, name}: [
@@ -105,7 +103,7 @@ in with lib; {
   inherit conf
     unitConf fileNix
     moduleName
-    pathContainers pathRoot pathROServices pathRWServices pathVar;
+    pathContainers pathRoot pathVar;
   options = {
     nixunits = mkOption {
       type = types.attrsOf (types.submodule (

@@ -10,7 +10,6 @@
 , ip6route? ""
 , nixpkgs? <nixpkgs>
 , properties ? "{}"
-, service? null
 }:
 
 let
@@ -18,31 +17,18 @@ let
   lib = pkgs.lib;
   pkgs = import nixpkgs {};
 
-  fileRWService = name: "${global.pathRWServices}/${name}.nix";
-  fileROService = name: "${global.pathROServices}/${name}.nix";
-
   _caps_allow = builtins.fromJSON(caps_allow);
   _properties = builtins.fromJSON(properties);
 
   config = let
-    _file =
-      if service == null then
-        global.fileNix id
-      else
-        let
-          _rw_service = fileRWService service;
-        in if builtins.pathExists _rw_service then
-          _rw_service
-        else
-          fileROService service;
+    _file = global.fileNix id;
+    _ = lib.assertMgs (builtins.pathExists _file) "Service undefined";
+    _conf = import _file;
   in
-    if (builtins.pathExists _file) then
-      builtins.trace ''Import : ${_file}'' import _file {inherit lib pkgs properties;}
-    else let
-       _ = lib.assertMgs (service != null) "Service undefined";
-    in {
-      services.${service}.enable = true;
-    };
+    if builtins.isFunction _conf then
+      _conf { inherit lib pkgs properties; }
+    else
+      _conf;
 
   global = import ./global.nix {inherit lib pkgs;};
 

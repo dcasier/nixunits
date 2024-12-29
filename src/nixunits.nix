@@ -10,7 +10,6 @@ stdenv.mkDerivation rec {
     mkdir -p $out/bin $out/services $out/tests $out/unit
     cp $src/*.nix $out/
     cp $src/bin/* $out/bin/
-    cp $src/services/* $out/services/
     cp $src/tests/* $out/tests/
     cp $src/unit/* $out/unit/
     ln -s ../tests/nixunits_tests $out/bin/

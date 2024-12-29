@@ -9,7 +9,6 @@ usage() {
   echo "  -a  <json list> capabilities allowed"
   echo "  -cc <service config content>"
   echo "  -cf <service file>"
-  echo "  -cn <service name>"
   echo "  -i  <interface>"
   echo "  -4  <IPv4>"
   echo "  -H4 <host IPv4>"
@@ -23,14 +22,23 @@ usage() {
   echo "  -s  start ?"
   echo
   echo "Examples:"
-  echo " nixunits create my_wordpress -cn wordpress  -6 '2001:bc8:a:b:c:d:e:1/64' -i link1 -R6 'fe80::1'"
-  echo " nixunits create my_pg1       -cn postgresql -6 'fc00::a:2' -H6 'fc00::a:1'"
-  echo " nixunits create my_pg2       -cn postgresql -4 192.168.1.1 -R4 192.168.1.254"
+  echo
+  echo " nixunits create my_wordpress -cc - -6 '2001:bc8:a:b:c:d:e:1/64' -i link1 -R6 'fe80::1' <<EOF
+{ lib, pkgs, ... }: {
+  services = {
+    mysql.enable = true;
+    wordpress.sites.\"localhost\" = {};
+  };
+}
+EOF"
+  echo
+  echo " nixunits create my_pg1 -cc \"\$CONTENT\" -6 'fc00::a:2' -H6 'fc00::a:1'"
+  echo " nixunits create my_pg2 -cf ./postgresql.nix -4 192.168.1.1 -R4 192.168.1.254"
   echo
   echo "Auto generated IPv6, from name (private network only):"
-  echo " nixunits create my_nc -cn nextcloud -6"
+  echo " nixunits create my_nc -ci ./nextcloud.nix -6"
   echo
-  echo " nixunits create mysql -cn mysql -6 -s -a '[\"CAP_DAC_OVERRIDE\"]'"
+  echo " nixunits create mysql -ci ./mysql.nix -6 -s -a '[\"CAP_DAC_OVERRIDE\"]'"
 
   test -n "$1" && exit "$1"
   exit 0
@@ -38,6 +46,8 @@ usage() {
 
 id=$1
 test -z "$id" && usage 1
+test "$id" = "-h" && usage 0
+test "$id" = "--help" && usage 0
 shift
 
 FORCE=false
@@ -63,9 +73,10 @@ while getopts "4:6a:c:f:i:n:H:R:hsr" opt; do
       CAPS=$OPTARG;;
     c)
       case $OPTARG in
-        c) serviceContent="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        c)
+          serviceContent="${!OPTIND}"; OPTIND=$((OPTIND + 1))
+          test "$serviceContent" == "-" && serviceContent=$(cat);;
         f) serviceFile="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
-        n) serviceName="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
         *) echo "Invalid option for -s. Use c, f or n."; usage 1;;
       esac
       ;;
@@ -116,9 +127,9 @@ then
   else
     echo "$serviceContent" > "$CONTAINER_DIR/unit.nix"
   fi
-else
-  test -z "$serviceName" && usage 1
-  _args+=" --argstr service $serviceName"
+# else
+  #  test -z "$serviceName" && usage 1
+  #  _args+=" --argstr service $serviceName"
 fi
 
 [ -n "$CAPS" ]      && _args+=" --argstr caps_allow $CAPS"

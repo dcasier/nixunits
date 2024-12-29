@@ -68,6 +68,8 @@ _step() {
   fi
 }
 
+httpd_def="{ services.httpd.enable = true; }"
+
 test "$(_jq declared_in_nixos)" == true && echo "Declared in NixOS" && exit 1
 
 # _nixunits delete $ID -frg > /dev/null
@@ -75,7 +77,11 @@ _nixunits delete $ID -fr > /dev/null
 _assert_equal "$(_json)" "$STATUS_1_INITIAL"
 
 if _step 1 "initial create"; then
-  nixunits create $ID -cn $SERVICE_NAME >/dev/null
+  nixunits create $ID -cc -  >/dev/null <<EOF
+{
+  services.httpd.enable = true;
+}
+EOF
   _assert_equal "$(_json)" "$STATUS_1_CREATED"
 
   nixunits delete $ID -f
@@ -83,18 +89,18 @@ if _step 1 "initial create"; then
 fi
 
 if _step 2 "initial create -6"; then
-  nixunits create $ID -cn $SERVICE_NAME -6 >/dev/null
+  nixunits create $ID -cc "$httpd_def" -6 >/dev/null
   _assert_equal "$(_json)" "$STATUS_1_CREATED"
 fi
 
 if _step 3 "IPv6 auto-generated"; then
-  nixunits create $ID -cn $SERVICE_NAME -6 -s >/dev/null
+  nixunits create $ID -cc "$httpd_def" -6 -s >/dev/null
   _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
   _ping "$(nixunits ip6_get "$ID")" | grep -A 1 statistiques
 fi
 
 if _step 4 "Restart"; then
-  nixunits create $ID -cn $SERVICE_NAME -6 -r >/dev/null
+  nixunits create $ID -cc "$httpd_def" -6 -r >/dev/null
   _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
   _ping "$(nixunits ip6_get "$ID")" | grep -A 1 statistiques
   nixunits delete $ID -f
@@ -102,7 +108,7 @@ if _step 4 "Restart"; then
 fi
 
 if _step 5 "IPv4 restart"; then
-  nixunits create $ID -cn $SERVICE_NAME \
+  nixunits create $ID -cc "$httpd_def" \
     -4 "$PRIVATE_IP4" -H4 "$PRIVATE_HOST_IP4" -r >/dev/null
   _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
   _ping "$PRIVATE_IP4" | grep -A 1 statistiques
@@ -111,7 +117,7 @@ if _step 5 "IPv4 restart"; then
 fi
 
 if _step 6 "IPv4 and IPv6 restart"; then
-  nixunits create $ID -cn $SERVICE_NAME \
+  nixunits create $ID -cc "$httpd_def" \
     -4 "$PRIVATE_IP4" -H4 "$PRIVATE_HOST_IP4" \
     -6 "$PRIVATE_IP6" -H6 "$PRIVATE_HOST_IP6" -r >/dev/null
   _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"

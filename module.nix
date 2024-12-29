@@ -80,12 +80,10 @@ in
       targets.multi-user.wants = [ "machines.target" ];
       tmpfiles.rules = [
        "d ${global.pathContainers} 2770 root ${moduleName}"
-       "d ${global.pathRWServices} 2770 root ${moduleName}"
        "d ${global.pathVar} 2770 root ${moduleName}"
       ]
       ++ concatMap (name: [
         "d ${global.pathRoot name} 0755 root root - -"
-        "L+ ${global.pathROServices} - - - - ${nixunits}/services"
         "L+ ${global.unitConf name} - - - - /etc/${moduleName}/${name}.conf"
       ]) (attrNames config.${moduleName});
     };
