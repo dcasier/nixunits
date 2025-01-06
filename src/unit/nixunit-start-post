@@ -29,7 +29,7 @@ else
   exit 0
 fi
 
-echo "- - Unit config - -"
+echo -e "\n- - Unit config - -" >> "$LOG"
 
 test -n "$IP4" && nsenter_eval "ip -4 a add $IP4 dev $INTERFACE"
 test -n "$IP6" && nsenter_eval "ip -6 a add $IP6 dev $INTERFACE"
@@ -44,7 +44,7 @@ else
   test -n "$IP6_ROUTE" && nsenter_eval "ip -6 route add default via $IP6_ROUTE dev $INTERFACE"
 fi
 
-echo "- - Host config - -"
+echo -e "\n- - Host config - -" >> "$LOG"
 
 if test -n "$HOST_INTERFACE"
 then
@@ -55,7 +55,7 @@ then
   test -n "$IP6" && host_eval "ip -6 route add $IP6 dev $HOST_INTERFACE"
 fi
 
-_resolv=$(cat /etc/resolv.conf | sed 's/resolvconf/host resolvconf/')
+_resolv=$(cat /etc/resolv.conf)
 nsenter_eval "echo \"$_resolv\" > /etc/resolv.conf"
 
 echo "[$(date)] - - - END POST - - - $NAME" >> "$LOG"
