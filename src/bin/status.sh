@@ -16,6 +16,10 @@ usage() {
 
 id=$1
 test -z "$id" && usage 1
+test "$id" = "h" && usage 0
+test "$id" = "-h" && usage 0
+test "$id" = "help" && usage 0
+test "$id" = "--help" && usage 0
 shift
 
 OUTPUT="plain"

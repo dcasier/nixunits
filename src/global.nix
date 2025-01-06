@@ -35,7 +35,10 @@ let
       '';
     };
     # networking.hostName = mkDefault name;
-    networking.useDHCP = false;
+    networking = {
+      resolvconf.enable = false;
+      useDHCP = false;
+    };
     nixpkgs.pkgs = pkgs;
     services.nscd.enable = false;
     system = {

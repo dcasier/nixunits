@@ -55,4 +55,7 @@ then
   test -n "$IP6" && host_eval "ip -6 route add $IP6 dev $HOST_INTERFACE"
 fi
 
+_resolv=$(cat /etc/resolv.conf | sed 's/resolvconf/host resolvconf/')
+nsenter_eval "echo \"$_resolv\" > /etc/resolv.conf"
+
 echo "[$(date)] - - - END POST - - - $NAME" >> "$LOG"

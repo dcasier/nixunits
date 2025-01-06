@@ -4,7 +4,7 @@ set -e
 . NIXUNITS/bin/common.sh
 
 usage() {
-  echo "Usage : nixunits create <container id> [options]"
+  echo "Usage : nixunits build <container id> [options]"
   echo "Available options:"
   echo "  -a  <json list> capabilities allowed"
   echo "  -cc <service config content>"
@@ -23,7 +23,7 @@ usage() {
   echo
   echo "Examples:"
   echo
-  echo " nixunits create my_wordpress -cc - -6 '2001:bc8:a:b:c:d:e:1/64' -i link1 -R6 'fe80::1' <<EOF
+  echo " nixunits build my_wordpress -cc - -6 '2001:bc8:a:b:c:d:e:1/64' -i link1 -R6 'fe80::1' <<EOF
 { lib, pkgs, ... }: {
   services = {
     mysql.enable = true;
@@ -32,13 +32,13 @@ usage() {
 }
 EOF"
   echo
-  echo " nixunits create my_pg1 -cc \"\$CONTENT\" -6 'fc00::a:2' -H6 'fc00::a:1'"
-  echo " nixunits create my_pg2 -cf ./postgresql.nix -4 192.168.1.1 -R4 192.168.1.254"
+  echo " nixunits build my_pg1 -cc \"\$CONTENT\" -6 'fc00::a:2' -H6 'fc00::a:1'"
+  echo " nixunits build my_pg2 -cf ./postgresql.nix -4 192.168.1.1 -R4 192.168.1.254"
   echo
   echo "Auto generated IPv6, from name (private network only):"
-  echo " nixunits create my_nc -ci ./nextcloud.nix -6"
+  echo " nixunits build my_nc -ci ./nextcloud.nix -6"
   echo
-  echo " nixunits create mysql -ci ./mysql.nix -6 -s -a '[\"CAP_DAC_OVERRIDE\"]'"
+  echo " nixunits build mysql -ci ./mysql.nix -6 -s -a '[\"CAP_DAC_OVERRIDE\"]'"
 
   test -n "$1" && exit "$1"
   exit 0
@@ -73,8 +73,7 @@ while getopts "4:6a:c:f:i:n:H:R:hsr" opt; do
       CAPS=$OPTARG;;
     c)
       case $OPTARG in
-        c)
-          serviceContent="${!OPTIND}"; OPTIND=$((OPTIND + 1))
+        c) serviceContent="${!OPTIND}"; OPTIND=$((OPTIND + 1))
           test "$serviceContent" == "-" && serviceContent=$(cat);;
         f) serviceFile="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
         *) echo "Invalid option for -s. Use c, f or n."; usage 1;;

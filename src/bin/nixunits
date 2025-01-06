@@ -7,11 +7,14 @@ usage() {
   echo "Usage : nixunits action [options]"
   echo
   echo "Available actions:"
-  echo "  create"
+  echo "  build"
   echo "  delete"
-  echo "  ip6_crc32 <container name>"
+  echo "  ip6_get <container name>"
   echo "  list"
+  echo "  nsenter|shell"
   echo "  start"
+  echo "  restart|reboot"
+  echo "  status"
   echo "  * : wrapper => machinectl \$@"
   echo "  h, help"
   echo "  <action> h, help"
@@ -23,11 +26,13 @@ usage() {
 
 ACTION="$1"
 test -z "$ACTION" && machinectl && exit 0
+test "$ACTION" = "-h" && usage 0
+test "$ACTION" = "--help" && usage 0
 shift
 
 case "$ACTION" in
-  create)
-    NIXUNITS/bin/create.sh "$@";;
+  build)
+    NIXUNITS/bin/build.sh "$@";;
   delete)
     NIXUNITS/bin/delete.sh "$@";;
   ip6_get)
