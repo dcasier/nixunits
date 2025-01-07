@@ -16,4 +16,6 @@ jobs:
     - uses: cachix/install-nix-action@v27
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - run: nix develop .#CI --command=test
+    - run: |
+        nix develop
+        nixunits build TOTO -cc "{ services.httpd.enable = true; }" -6
