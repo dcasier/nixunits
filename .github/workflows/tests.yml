@@ -15,7 +15,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Run moi ça…
-              - name: Run in NixOS
         uses: addnab/docker-run-action@v3
         with:
           image: nixos/nix
