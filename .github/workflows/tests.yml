@@ -17,4 +17,4 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixos-unstable
     - run: |
-        sudo nix develop --command bash -c 'nixunits build TOTO -cc "{ services.httpd.enable = true; }" -6'
+        nix develop --command bash -c 'sudo nixunits build TOTO -cc "{ services.httpd.enable = true; }" -6'
