@@ -5,6 +5,5 @@ set -e
 
 LOG=$(log "$NAME")
 
-echo "[$(date)] - - - START PRE - - - $NAME" >> "$LOG"
-echo >> "$LOG"
-
+echo "[$(date)] - - - START PRE - - - $NAME" >>"$LOG"
+echo >>"$LOG"
