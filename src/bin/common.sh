@@ -23,16 +23,21 @@ in_nixos_failed() {
   fi
 }
 
-ip6_crc32() {
-  echo "$(_ip6_crc32 "$1"):2"
+ip6_crc32() { echo "$(_ip6_crc32 "$1"):2"; }
+
+ip6_crc32_host() { echo "$(_ip6_crc32 "$1"):1"; }
+
+log() { echo "$(unit_dir "$1")/unit.log"; }
+
+pid_leader() {
+  machinectl show "$1" --no-pager |grep Leader |cut -d'=' -f2
 }
 
-ip6_crc32_host() {
-  echo "$(_ip6_crc32 "$1"):1"
-}
+# shellcheck disable=SC2046
+shell_args() { echo --target $(pid_leader "$1") --mount --uts --ipc --net --pid --user; }
 
-log() {
-  echo "$(unit_dir "$1")/unit.log"
+shell_exist() {
+  pgrep "nsenter $(shell_args "$1")"
 }
 
 _ip6_crc32() {

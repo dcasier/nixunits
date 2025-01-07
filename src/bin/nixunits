@@ -47,6 +47,10 @@ case "$ACTION" in
   nsenter|shell)
     NIXUNITS/bin/nsenter.sh "$@";;
   restart|reboot)
+    if shell_exist; then
+      echo "Stop shell before"
+      exit 1
+    fi
     systemctl restart "nixunits@$1";;
   start)
     systemctl start "nixunits@$1";;

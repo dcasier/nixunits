@@ -1,12 +1,21 @@
 #!/bin/sh
 set -e
 
-PID=$(machinectl show "$1" --no-pager |grep Leader |cut -d'=' -f2)
+. NIXUNITS/bin/common.sh
+
 shift
+
+echo >&2 " - - - WARNING - - - "
+echo >&2 "Remember to exit the shell before stopping container"
+echo >&2 " - - - WARNING - - - "
+
+_args=$(shell_args "$1")
 
 if test -z "$*"
 then
-  nsenter --target "$PID" --mount --uts --ipc --net --pid --user
+  # shellcheck disable=SC2086
+  nsenter $_args
 else
-  nsenter --target "$PID" --mount --uts --ipc --net --pid --user "$@"
+  # shellcheck disable=SC2086
+  nsenter $_args "$@"
 fi

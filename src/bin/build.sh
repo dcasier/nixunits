@@ -153,7 +153,7 @@ test -n "$hostIp6"   && echo "  hostIp6: $hostIp6"
 test -n "$ip6route"  && echo "  ip6route: $ip6route"
 echo
 
-echo "nix-build NIXUNITS/default.nix $_args \> $CONTAINER_DIR/build.log 2\> $CONTAINER_DIR/build.err"
+echo "nix-build NIXUNITS/default.nix $_args > $CONTAINER_DIR/build.log 2> $CONTAINER_DIR/build.err"
 # shellcheck disable=SC2086
 nix-build NIXUNITS/default.nix $_args > $CONTAINER_DIR/build.log 2> $CONTAINER_DIR/build.err
 
@@ -161,7 +161,7 @@ _link="$CONTAINER_DIR/unit.conf"
 test -L "$_link" || ln -s "$CONTAINER_DIR/result/etc/nixunits/$id.conf" "$_link"
 
 _unit="nixunits@$id"
-STARTED=$(systemctl -o json show "$_unit" --no-pager |grep ^SubState=running >/dev/null && echo true || echo false)
+STARTED=$(systemctl show "$_unit" --no-pager |grep ^SubState=running >/dev/null && echo true || echo false)
 if $START && ! $STARTED || $RESTART
 then
   echo "systemctl restart $_unit"
