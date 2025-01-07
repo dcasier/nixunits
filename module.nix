@@ -53,7 +53,10 @@ in
 {
   config = recursiveUpdate (global.conf config.${moduleName}) {
 
-    environment.systemPackages = [ nixunits ];
+    environment.systemPackages = [
+      nixunits
+      util-linux
+    ];
 
     networking.dhcpcd.denyInterfaces = [ "ve-*" "vb-*" ];
 
