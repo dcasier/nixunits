@@ -17,6 +17,9 @@ jobs:
       uses: addnab/docker-run-action@v3
       with:
         image: nixos/nix
-        options: --privileged  # si nécessaire pour certaines fonctionnalités de Nix
+        options: >-
+          --privileged  # si nécessaire pour certaines fonctionnalités de Nix
+          -v ${{ github.workspace }}:/workspace
         run: |
+          cd /workspace
           nix --extra-experimental-features nix-command --extra-experimental-features flakes develop --command bash -c 'nixunits build TOTO -cc "{ services.httpd.enable = true; }" -6'
