@@ -1,76 +1,89 @@
-#!/bin/sh
-set -e
+#!/bin/bash
+set -xeo pipefail
+trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 
+# shellcheck disable=SC1091
 . NIXUNITS/bin/common.sh
-
-host_eval() {
-  echo "Host eval $1" >> "$LOG"
-  /bin/sh -c "$1" 2>> "$LOG"
-}
-
-nsenter_eval() {
-  echo "NS eval $1" >> "$LOG"
-  nsenter --target $NS_PID --mount --uts --ipc --net --pid -- /bin/sh -c "$1" 2>> "$LOG"
-}
 
 LOG=$(log "$NAME")
 
-echo "[$(date)] - - - START POST - - - $NAME" >> "$LOG"
+log_msg() {
+  echo "[$(date)] $1" >>"$LOG"
+}
 
-if [ -z "$IP4" ] && [ -z "$IP6" ]
-then
-  echo "[$(date)] - - - Private network without IP (exit) - - - $NAME" >> "$LOG"
+log_block_msg() {
+  log_msg "########################################"
+  log_msg "# $1"
+  log_msg "########################################"
+}
+
+host_exec() {
+  log_msg "[    Host   ] exec $1"
+  /bin/sh -c "$1" 2>>"$LOG"
+}
+
+container_exec() {
+  log_msg "[ Container ] exec $1"
+  nsenter --target "$NS_PID" --mount --uts --ipc --net --pid -- /bin/sh -c "$1" 2>>"$LOG"
+}
+
+configure_container() {
+  test -n "$IP4" && container_exec "ip -4 a add $IP4 dev $INTERFACE" || true
+  test -n "$IP6" && container_exec "ip -6 a add $IP6 dev $INTERFACE" || true
+  test -n "$INTERFACE" && container_exec "ip link set dev $INTERFACE up" || true
+
+  if [ -n "$HOST_INTERFACE" ]; then
+    if [ -n "$HOST_IP4" ]; then
+      container_exec "ip -4 route add ${HOST_IP4} dev $INTERFACE"
+      IP4ROUTE=$HOST_IP4
+    fi
+    if [ -n "$HOST_IP6" ]; then
+      container_exec "ip -6 route add ${HOST_IP6} dev $INTERFACE"
+      IP6ROUTE=$HOST_IP6
+    fi
+  fi
+
+  if [ -n "$INTERFACE" ]; then
+    test -n "$IP4ROUTE" && container_exec "ip -4 route add default via $IP4ROUTE dev $INTERFACE"
+    test -n "$IP6ROUTE" && container_exec "ip -6 route add default via $IP6ROUTE dev $INTERFACE"
+  fi
+
+  # Fix resolv.conf
+  _resolv=$(cat /etc/resolv.conf)
+  container_exec "echo \"$_resolv\" > /etc/resolv.conf"
+}
+
+configure_host() {
+  if test -n "$HOST_INTERFACE"; then
+    test -n "$HOST_IP4" && host_exec "ip -4 a add $HOST_IP4 dev $HOST_INTERFACE" || true
+    test -n "$HOST_IP6" && host_exec "ip -6 a add $HOST_IP6 dev $HOST_INTERFACE" || true
+    host_exec "ip link set dev $HOST_INTERFACE up"
+    test -n "$IP4" && host_exec "ip -4 route add $IP4 dev $HOST_INTERFACE" || true
+    test -n "$IP6" && host_exec "ip -6 route add $IP6 dev $HOST_INTERFACE" || true
+  fi
+}
+
+###############################################################################
+# Main
+###############################################################################
+
+log_block_msg "- - - START POST - - - $NAME"
+
+if [ -z "$IP4" ] && [ -z "$IP6" ]; then
+  log_block_msg "- - - Private network without IP (exit) - - - $NAME"
   exit 0
 fi
 
-NS_PID=$(host_eval "ps --ppid $MAINPID -o pid h")
+NS_PID=$(host_exec "ps --ppid $MAINPID -o pid h")
 
-if [ -z "$INTERFACE" ] && { { [ -n "$IP4" ] && [ -n "$HOST_IP4" ]; } || { [ -n "$IP6" ] && [ -n "$HOST_IP6" ]; }; }
-then
-  if_infos=$(nsenter_eval "ip -j link" | jq '.[] | select(.ifname != "lo")')
+if [ -z "$INTERFACE" ] && { { [ -n "$IP4" ] && [ -n "$HOST_IP4" ]; } || { [ -n "$IP6" ] && [ -n "$HOST_IP6" ]; }; }; then
+  if_infos=$(container_exec "ip -j link" | jq '.[] | select(.ifname != "lo")')
   host_interface_id=$(echo "$if_infos" | jq '.link_index')
   INTERFACE=$(echo "$if_infos" | jq -r '.ifname')
   HOST_INTERFACE=$(ip -j link | jq -r ".[] | select(.ifindex == $host_interface_id) | .ifname")
 fi
 
-echo -e "\n- - Unit config - -" >> "$LOG"
+configure_container
+configure_host
 
-test -n "$IP4" && nsenter_eval "ip -4 a add $IP4 dev $INTERFACE"
-test -n "$IP6" && nsenter_eval "ip -6 a add $IP6 dev $INTERFACE"
-test -n "$INTERFACE" && nsenter_eval "ip link set dev $INTERFACE up"
-
-if [ -n "$HOST_INTERFACE" ]
-then
-  if [ -n "$HOST_IP4" ]
-  then
-    nsenter_eval "ip -4 route add ${HOST_IP4} dev $INTERFACE"
-    IP4ROUTE=$HOST_IP4
-  fi
-  if [ -n "$HOST_IP6" ]
-  then
-     nsenter_eval "ip -6 route add ${HOST_IP6} dev $INTERFACE"
-     IP6ROUTE=$HOST_IP6
-  fi
-fi
-
-if [ -n "$INTERFACE" ]
-then
-  test -n "$IP4ROUTE" && nsenter_eval "ip -4 route add default via $IP4ROUTE dev $INTERFACE"
-  test -n "$IP6ROUTE" && nsenter_eval "ip -6 route add default via $IP6ROUTE dev $INTERFACE"
-fi
-
-echo -e "\n- - Host config - -" >> "$LOG"
-
-if [ -n "$HOST_INTERFACE" ]
-then
-  test -n "$HOST_IP4" && host_eval "ip -4 a add $HOST_IP4 dev $HOST_INTERFACE"
-  test -n "$HOST_IP6" && host_eval "ip -6 a add $HOST_IP6 dev $HOST_INTERFACE"
-  host_eval "ip link set dev $HOST_INTERFACE up"
-  test -n "$IP4" && host_eval "ip -4 route add $IP4 dev $HOST_INTERFACE"
-  test -n "$IP6" && host_eval "ip -6 route add $IP6 dev $HOST_INTERFACE"
-fi
-
-_resolv=$(cat /etc/resolv.conf)
-nsenter_eval "echo \"$_resolv\" > /etc/resolv.conf"
-
-echo "[$(date)] - - - END POST - - - $NAME" >> "$LOG"
+log_msg "- - - END POST - - - $NAME"
