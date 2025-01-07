@@ -39,26 +39,29 @@ test -n "$IP4" && nsenter_eval "ip -4 a add $IP4 dev $INTERFACE"
 test -n "$IP6" && nsenter_eval "ip -6 a add $IP6 dev $INTERFACE"
 test -n "$INTERFACE" && nsenter_eval "ip link set dev $INTERFACE up"
 
-if test -n "$HOST_INTERFACE"
+if [ -n "$HOST_INTERFACE" ]
 then
-  if test -n "$HOST_IP4"
+  if [ -n "$HOST_IP4" ]
   then
     nsenter_eval "ip -4 route add ${HOST_IP4} dev $INTERFACE"
-    nsenter_eval "ip -4 route default via ${HOST_IP4}"
+    IP4ROUTE=$HOST_IP4
   fi
-  if test -n "$HOST_IP6"
+  if [ -n "$HOST_IP6" ]
   then
      nsenter_eval "ip -6 route add ${HOST_IP6} dev $INTERFACE"
-     nsenter_eval "ip -6 route default via ${HOST_IP6}"
+     IP6ROUTE=$HOST_IP6
   fi
-else
-  test -n "$IP4_ROUTE" && nsenter_eval "ip -4 route add default via $IP4_ROUTE dev $INTERFACE"
-  test -n "$IP6_ROUTE" && nsenter_eval "ip -6 route add default via $IP6_ROUTE dev $INTERFACE"
+fi
+
+if [ -n "$INTERFACE" ]
+then
+  test -n "$IP4ROUTE" && nsenter_eval "ip -4 route add default via $IP4ROUTE dev $INTERFACE"
+  test -n "$IP6ROUTE" && nsenter_eval "ip -6 route add default via $IP6ROUTE dev $INTERFACE"
 fi
 
 echo -e "\n- - Host config - -" >> "$LOG"
 
-if test -n "$HOST_INTERFACE"
+if [ -n "$HOST_INTERFACE" ]
 then
   test -n "$HOST_IP4" && host_eval "ip -4 a add $HOST_IP4 dev $HOST_INTERFACE"
   test -n "$HOST_IP6" && host_eval "ip -6 a add $HOST_IP6 dev $HOST_INTERFACE"
