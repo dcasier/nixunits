@@ -14,5 +14,11 @@ jobs:
     container: nixos/nix
     steps:
     - uses: actions/checkout@v4
-    - run: |
-        nix --extra-experimental-features nix-command --extra-experimental-features flakes develop --command bash -c 'nixunits build TOTO -cc "{ services.httpd.enable = true; }" -6'
+    - name: Run moi ça…
+              - name: Run in NixOS
+        uses: addnab/docker-run-action@v3
+        with:
+          image: nixos/nix
+          options: --privileged  # si nécessaire pour certaines fonctionnalités de Nix
+          run: |
+            nix --extra-experimental-features nix-command --extra-experimental-features flakes develop --command bash -c 'nixunits build TOTO -cc "{ services.httpd.enable = true; }" -6'
