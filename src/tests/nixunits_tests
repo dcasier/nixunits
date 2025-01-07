@@ -90,6 +90,8 @@ fi
 if _step 2 "initial build -6"; then
   nixunits build $ID -cc "$httpd_def" -6 >/dev/null
   _assert_equal "$(_json)" "$STATUS_1_CREATED"
+  _assert_equal "$(_nixunits status $ID -cc "{ services.httpd.enable = false; }" -o json)" "$STATUS_1_CREATED"
+  _assert_equal "$(_nixunits status $ID -cc "$httpd_def" -o json)" "$STATUS_1_CREATED_NIX_SAME"
 fi
 
 if _step 3 "IPv6 auto-generated"; then

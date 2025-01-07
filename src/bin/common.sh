@@ -1,10 +1,12 @@
 _VAR="/var/lib/nixunits/containers"
 
+
+
 unit_dir() { echo "$_VAR/$1"; }
 
-unit_root() { echo "$(unit_dir "$1")/root/"; }
-
 unit_conf() { echo "$(unit_dir "$1")/unit.conf"; }
+unit_nix() { echo "$(unit_dir "$1")/unit.nix"; }
+unit_root() { echo "$(unit_dir "$1")/root/"; }
 
 in_nixos() {
    test "$(dirname "$(readlink "$(unit_conf "$1")")")" = "/etc/nixunits"

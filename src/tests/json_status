@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=25.05
+VERSION=24.11
 
 STATUS_1_INITIAL=$(cat <<EOF
 {
@@ -10,6 +10,7 @@ STATUS_1_INITIAL=$(cat <<EOF
   "version": "",
   "data_exist": false,
   "config_exist": false,
+  "nix_same": false,
   "declared_in_nixos": false,
   "addresses": []
 }
@@ -24,6 +25,22 @@ STATUS_1_CREATED=$(cat <<EOF
   "version": "",
   "data_exist": true,
   "config_exist": true,
+  "nix_same": false,
+  "declared_in_nixos": false,
+  "addresses": []
+}
+EOF
+)
+
+STATUS_1_CREATED_NIX_SAME=$(cat <<EOF
+{
+  "id": "8643a4f5-c137-44ef-953e-e8b4aca9f924",
+  "os": "",
+  "status": "created",
+  "version": "",
+  "data_exist": true,
+  "config_exist": true,
+  "nix_same": true,
   "declared_in_nixos": false,
   "addresses": []
 }
@@ -38,6 +55,7 @@ STATUS_1_STARTED=$(cat <<EOF
   "version": "$VERSION",
   "data_exist": true,
   "config_exist": true,
+  "nix_same": false,
   "declared_in_nixos": false
 }
 EOF
@@ -51,6 +69,7 @@ STATUS_1_INITIAL_WITH_DATA=$(cat <<EOF
   "version": "",
   "data_exist": true,
   "config_exist": false,
+  "nix_same": false,
   "declared_in_nixos": false,
   "addresses": []
 }

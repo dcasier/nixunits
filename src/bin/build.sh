@@ -76,7 +76,7 @@ while getopts "4:6a:c:f:i:n:H:R:hsr" opt; do
         c) serviceContent="${!OPTIND}"; OPTIND=$((OPTIND + 1))
           test "$serviceContent" == "-" && serviceContent=$(cat);;
         f) serviceFile="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
-        *) echo "Invalid option for -s. Use c, f or n."; usage 1;;
+        *) echo "Invalid option for -s. Use c or f."; usage 1;;
       esac
       ;;
     i)
@@ -120,11 +120,12 @@ chmod g-s "$CONTAINER_DIR/root"
 _args="--argstr id $id"
 if [ -n "$serviceFile" ] || [ -n "$serviceContent" ]
 then
+  _unix_nix="$(unit_nix "$id")"
   if [ -n "$serviceFile" ]
   then
-    install "$serviceFile" "$CONTAINER_DIR/unit.nix"
+    install "$serviceFile" "$_unix_nix"
   else
-    echo "$serviceContent" > "$CONTAINER_DIR/unit.nix"
+    echo "$serviceContent" > "$_unix_nix"
   fi
 # else
   #  test -z "$serviceName" && usage 1

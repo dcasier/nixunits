@@ -6,6 +6,7 @@ set -e
 usage() {
   echo "Usage : nixunits status <container id> [options]"
   echo "Available options:"
+  echo "  -cc <service config content (for comparison)>"
   echo "  -o <output [json/plain]>"
   echo "  -h, --help"
   echo
@@ -24,8 +25,15 @@ shift
 
 OUTPUT="plain"
 
-while getopts "o:h:" opt; do
+while getopts "c:o:h:" opt; do
   case $opt in
+    c)
+      case $OPTARG in
+        c) serviceContent="${!OPTIND}"; OPTIND=$((OPTIND + 1))
+          test "$serviceContent" == "-" && serviceContent=$(cat);;
+        *) echo "Invalid option for -cc"; usage 1;;
+      esac
+      ;;
     o)
       if [ "$OPTARG" != "plain" ] && [ "$OPTARG" != "json" ]; then
         echo "Invalid output format : $OPTARG"
@@ -41,6 +49,7 @@ while getopts "o:h:" opt; do
 done
 
 CONF_EXIST=false
+NIX_SAME=false
 DATA_EXIST=false
 DECLARED_IN_NIXOS=false
 STATUS=$(test -d "$(unit_dir "$id")" && echo "created" || echo "initial")
@@ -53,12 +62,20 @@ then
   ADDRESSES=$(echo "$STARTED_INFO" | jq -r .addresses)
 fi
 
+_unit_conf=$(unit_conf "$id")
+_unit_nix=$(unit_nix "$id")
+
 if [ "$STATUS" != "initial" ]
 then
-  if [ -f "$(unit_conf "$id")" ]
+  if [ -f "$_unit_conf" ]
   then
     CONF_EXIST="true"
     DECLARED_IN_NIXOS=$(in_nixos "$id" && echo "true" || echo "false")
+    if [ "$serviceContent" != "" ]
+    then
+      _initial_nix=$(cat "$_unit_nix")
+      test "$serviceContent" = "$_initial_nix" && NIX_SAME=true
+    fi
   else
     CONF_EXIST="false"
     STATUS="created"
@@ -94,6 +111,7 @@ else
   \"version\": \"$VERSION\",
   \"data_exist\": $DATA_EXIST,
   \"config_exist\": $CONF_EXIST,
+  \"nix_same\": $NIX_SAME,
   \"declared_in_nixos\": $DECLARED_IN_NIXOS,
   \"addresses\": [$(for a in $ADDRESSES;do echo -n \""$a"\"; echo -n ","; done | sed 's/,$//')]
 }"
