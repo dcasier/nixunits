@@ -34,7 +34,7 @@ stdenv.mkDerivation rec {
     platforms = platforms.linux;
     maintainers = [ maintainers.evoo ];
   };
-  nativeBuildInputs = with pkgs; [ jq ];
+  nativeBuildInputs = with pkgs; [ jq util-linux ];
 
   # phases = ["buildPhase"];
 }
