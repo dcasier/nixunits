@@ -37,8 +37,16 @@ test -n "$INTERFACE" && nsenter_eval "ip link set dev $INTERFACE up"
 
 if test -n "$HOST_INTERFACE"
 then
-  test -n "$HOST_IP4" && nsenter_eval "ip -4 route add ${HOST_IP4} dev $INTERFACE"
-  test -n "$HOST_IP6" && nsenter_eval "ip -6 route add ${HOST_IP6} dev $INTERFACE"
+  if test -n "$HOST_IP4"
+  then
+    nsenter_eval "ip -4 route add ${HOST_IP4} dev $INTERFACE"
+    nsenter_eval "ip -4 route default via ${HOST_IP4}"
+  fi
+  if test -n "$HOST_IP6"
+  then
+     nsenter_eval "ip -6 route add ${HOST_IP6} dev $INTERFACE"
+     nsenter_eval "ip -6 route default via ${HOST_IP6}"
+  fi
 else
   test -n "$IP4_ROUTE" && nsenter_eval "ip -4 route add default via $IP4_ROUTE dev $INTERFACE"
   test -n "$IP6_ROUTE" && nsenter_eval "ip -6 route add default via $IP6_ROUTE dev $INTERFACE"
