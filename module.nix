@@ -55,7 +55,6 @@ in
 
     environment.systemPackages = [
       nixunits
-      util-linux
     ];
 
     networking.dhcpcd.denyInterfaces = [ "ve-*" "vb-*" ];
