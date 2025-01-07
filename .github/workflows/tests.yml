@@ -1,11 +1,12 @@
 name: run-tests
-  on: 
-    pull_request:
-      branches:
-      - main
-    push:
-      branches:
-      - main
+
+on: 
+  pull_request:
+    branches:
+    - main
+  push:
+    branches:
+    - main
 
 jobs:
   test:
@@ -15,4 +16,4 @@ jobs:
     - uses: cachix/install-nix-action@v27
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - run: nix-build
+    - run: nix develop .#CI --command=test
