@@ -17,13 +17,11 @@ stdenv.mkDerivation rec {
     patchShebangs $out/bin
 
     sed -i "
-      3i export PATH=${jq}/bin:${nix}/bin:${systemd}/bin:\$PATH
       s|evalConfig=.*|evalConfig=$share/eval-config.nix|
       s|NIXUNITS|$out|
     " $out/bin/*
 
     sed -i "
-      3i export PATH=${jq}/bin:${libcap}/bin:${iproute2}/bin:${procps}/bin:${coreutils-full}/bin:${util-linux}/bin
       s|NIXUNITS|$out|
     " $out/unit/*
   '';

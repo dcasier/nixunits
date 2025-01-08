@@ -34,6 +34,11 @@ let
         ${pkgs.libcap}/bin/capsh --print
       '';
     };
+    environment = {
+      systemPackages = with pkgs; [
+        jq
+      ];
+    };
     # networking.hostName = mkDefault name;
     networking = {
       resolvconf.enable = false;

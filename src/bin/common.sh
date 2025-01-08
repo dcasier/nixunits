@@ -1,7 +1,5 @@
 _VAR="/var/lib/nixunits/containers"
 
-
-
 unit_dir() { echo "$_VAR/$1"; }
 
 unit_conf() { echo "$(unit_dir "$1")/unit.conf"; }
@@ -34,10 +32,12 @@ pid_leader() {
 }
 
 # shellcheck disable=SC2046
-shell_args() { echo --target $(pid_leader "$1") --mount --uts --ipc --net --pid --user; }
+shell_args() {
+  echo --target $(pid_leader "$1") --mount --uts --ipc --net --pid --user;
+}
 
 shell_exist() {
-  pgrep "nsenter $(shell_args "$1")"
+  pgrep -f "nsenter $(shell_args "$1")" >/dev/null
 }
 
 _ip6_crc32() {

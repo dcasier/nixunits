@@ -1,15 +1,14 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 . NIXUNITS/bin/common.sh
 
+ID="$1"
 shift
 
-echo >&2 " - - - WARNING - - - "
-echo >&2 "Remember to exit the shell before stopping container"
-echo >&2 " - - - WARNING - - - "
+echo >&2 " - - - WARNING  Remember to exit the shell before stopping container WARNING - - - "
 
-_args=$(shell_args "$1")
+_args=$(shell_args "$ID")
 
 if test -z "$*"
 then
