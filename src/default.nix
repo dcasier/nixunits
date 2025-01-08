@@ -60,9 +60,11 @@ let
   ];
 
   utils = import ./utils.nix;
-in (
-  lib.evalModules({
-    inherit modules;
-    specialArgs = {inherit pkgs;};
-  })
-).config.system.build.etc
+
+  system = (
+    lib.evalModules({
+      inherit modules;
+      specialArgs = {inherit pkgs;};
+    })
+  ).config.system;
+in system.build.etc
