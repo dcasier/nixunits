@@ -8,7 +8,7 @@ trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 LOG=$(log "$NAME")
 
 log_msg() {
-  echo "[$(date)] $1" >>"$LOG"
+  echo "$1" >>"$LOG"
 }
 
 log_block_msg() {
