@@ -9,6 +9,7 @@ usage() {
   echo "  -a  <json list> capabilities allowed"
   echo "  -cc <service config content>"
   echo "  -cf <service file>"
+  echo "  -p <JSON properties>"
   echo "  -i  <interface>"
   echo "  -4  <IPv4>"
   echo "  -H4 <host IPv4>"
@@ -55,7 +56,7 @@ START=false
 RESTART=false
 
 # shellcheck disable=SC2213
-while getopts "4:6a:c:f:i:n:H:R:hsr" opt; do
+while getopts "4:6a:c:p:f:i:n:H:R:hsr" opt; do
   case $opt in
     4)
       ip4=$OPTARG;;
@@ -79,6 +80,8 @@ while getopts "4:6a:c:f:i:n:H:R:hsr" opt; do
         *) echo "Invalid option for -s. Use c or f."; usage 1;;
       esac
       ;;
+    p)
+      properties=$OPTARG;;
     i)
       interface=$OPTARG;;
     r)
@@ -117,7 +120,7 @@ test ! -d "$CONTAINER_DIR" && install -m 2750 -d "$CONTAINER_DIR"
 test -d "$CONTAINER_DIR/root" || install -g root -d "$CONTAINER_DIR/root"
 chmod g-s "$CONTAINER_DIR/root"
 
-_args="--argstr id $id"
+_args=(--argstr id "$id")
 if [ -n "$serviceFile" ] || [ -n "$serviceContent" ]
 then
   _unix_nix="$(unit_nix "$id")"
@@ -127,21 +130,19 @@ then
   else
     echo "$serviceContent" > "$_unix_nix"
   fi
-# else
-  #  test -z "$serviceName" && usage 1
-  #  _args+=" --argstr service $serviceName"
 fi
 
-[ -n "$CAPS" ]      && _args+=" --argstr caps_allow $CAPS"
-[ -n "$hostIp4" ]   && _args+=" --argstr hostIp4 $hostIp4"
-[ -n "$hostIp6" ]   && _args+=" --argstr hostIp6 $hostIp6"
-[ -n "$interface" ] && _args+=" --argstr interface $interface"
-[ -n "$ip4" ]       && _args+=" --argstr ip4 $ip4"
-[ -n "$ip6" ]       && _args+=" --argstr ip6 $ip6"
-[ -n "$ip4route" ]  && _args+=" --argstr ip4route $ip4route"
-[ -n "$ip6route" ]  && _args+=" --argstr ip6route $ip6route"
+[ -n "$CAPS" ]       && _args+=(--argstr caps_allow "$CAPS")
+[ -n "$hostIp4" ]    && _args+=(--argstr hostIp4 "$hostIp4")
+[ -n "$hostIp6" ]    && _args+=(--argstr hostIp6 "$hostIp6")
+[ -n "$interface" ]  && _args+=(--argstr interface "$interface")
+[ -n "$ip4" ]        && _args+=(--argstr ip4 "$ip4")
+[ -n "$ip6" ]        && _args+=(--argstr ip6 "$ip6")
+[ -n "$ip4route" ]   && _args+=(--argstr ip4route "$ip4route")
+[ -n "$ip6route" ]   && _args+=(--argstr ip6route "$ip6route")
+[ -n "$properties" ] && _args+=(--argstr properties "$properties")
 
-_args+=" --out-link $CONTAINER_DIR/result"
+_args+=(--out-link "$CONTAINER_DIR/result")
 
 echo "Container : $id"
 test -n "$interface" && echo "  interface: $interface"
@@ -153,9 +154,11 @@ test -n "$hostIp6"   && echo "  hostIp6: $hostIp6"
 test -n "$ip6route"  && echo "  ip6route: $ip6route"
 echo
 
-echo "nix-build NIXUNITS/default.nix $_args > $CONTAINER_DIR/build.log 2> $CONTAINER_DIR/build.err"
+echo HEARE
+
+echo "nix-build NIXUNITS/default.nix" "${_args[@]}"
 # shellcheck disable=SC2086
-nix-build NIXUNITS/default.nix $_args > $CONTAINER_DIR/build.log 2> $CONTAINER_DIR/build.err
+nix-build NIXUNITS/default.nix "${_args[@]}"
 
 _link="$CONTAINER_DIR/unit.conf"
 test -L "$_link" || ln -s "$CONTAINER_DIR/result/etc/nixunits/$id.conf" "$_link"

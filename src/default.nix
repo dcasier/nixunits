@@ -26,7 +26,10 @@ let
     _conf = import _file;
   in
     if builtins.isFunction _conf then
-      _conf { inherit lib pkgs properties; }
+      _conf {
+        inherit lib pkgs;
+        properties = _properties;
+      }
     else
       _conf;
 
