@@ -1,14 +1,12 @@
 #!/bin/bash
-set -xeo pipefail
+set -eo pipefail
 trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 
 # shellcheck disable=SC1091
 . NIXUNITS/bin/common.sh
 
-LOG=$(log "$NAME")
-
 log_msg() {
-  echo "$1" >>"$LOG"
+  echo "$1" >&2
 }
 
 log_block_msg() {
@@ -19,12 +17,12 @@ log_block_msg() {
 
 host_exec() {
   log_msg "[    Host   ] exec $1"
-  /bin/sh -c "$1" 2>>"$LOG"
+  /bin/sh -c "$1"
 }
 
 container_exec() {
   log_msg "[ Container ] exec $1"
-  nsenter --target "$NS_PID" --mount --uts --ipc --net --pid -- /bin/sh -c "$1" 2>>"$LOG"
+  nsenter --target "$NS_PID" --mount --uts --ipc --net --pid -- /bin/sh -c "$1"
 }
 
 configure_container() {
@@ -67,10 +65,10 @@ configure_host() {
 # Main
 ###############################################################################
 
-log_block_msg "- - - START POST - - - $NAME"
+log_block_msg "### nixunits START POST"
 
 if [ -z "$IP4" ] && [ -z "$IP6" ]; then
-  log_block_msg "- - - Private network without IP (exit) - - - $NAME"
+  log_block_msg "### Private network without IP (exit)"
   exit 0
 fi
 
@@ -86,4 +84,4 @@ fi
 configure_container
 configure_host
 
-log_msg "- - - END POST - - - $NAME"
+log_msg "### nixunits END POST ###"
