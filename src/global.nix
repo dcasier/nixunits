@@ -76,9 +76,9 @@ let
     name = "${moduleName}/${name}.conf";
     value = {
       text = ''
-        EXTRA_NSPAWN_FLAGS="${
-          optionalString (cfg.extraFlags != [])
-            (concatStringsSep " " cfg.extraFlags)
+        NSPAWN_ARGS="${
+          optionalString (cfg.nspawnArgs != [])
+            (concatStringsSep " " cfg.nspawnArgs)
           + optionalString (isNetPriv cfg)
             " --private-network"
           + optionalString (isNetVEth cfg)
@@ -117,10 +117,10 @@ in with lib; {
       type = types.attrsOf (types.submodule (
         { config, options, name, ... }: {
           config = {
-            extraFlags = (security.flags config.caps_allow) ++ [
+            nspawnArgs = (security.flags config.caps_allow) ++ [
               "--link-journal=host"
               "--bind-ro=/nix/store"
-            ];
+            ] ++ (map (_bind: "--bind=${_bind}") config.bind);
             # path = config.config.system.build.toplevel;
           };
           options = {
@@ -130,6 +130,11 @@ in with lib; {
                 Whether the container is automatically started at boot-time.
               '';
               type = types.bool;
+            };
+
+            bind = mkOption {
+              default = [];
+              type = types.listOf types.str;
             };
 
             boot.isContainer = mkOption {
@@ -164,7 +169,7 @@ in with lib; {
               };
             };
 
-            extraFlags = mkOption {
+            nspawnArgs = mkOption {
               default = [];
               description = ''
                 Extra flags passed to the systemd-nspawn command.

@@ -1,5 +1,6 @@
 {
-  caps_allow ? "[]"
+  bind? "[]"
+, caps_allow ? "[]"
 , hostIp4 ? ""
 , hostIp6 ? ""
 , id
@@ -17,6 +18,7 @@ let
   lib = pkgs.lib;
   pkgs = import nixpkgs {};
 
+  _bind = builtins.fromJSON(bind);
   _caps_allow = builtins.fromJSON(caps_allow);
   _properties = builtins.fromJSON(properties);
 
@@ -57,6 +59,7 @@ let
         network = {
           inherit hostIp4 hostIp6 interface ip4 ip4route ip6 ip6route;
         };
+        bind=_bind;
         caps_allow=_caps_allow;
       };
     }

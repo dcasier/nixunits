@@ -28,8 +28,8 @@
   in
      recursiveUpdate cfg patch;
 in {
-  flags = cap_allow: let
-    CAPS = subtractLists cap_allow [
+  flags = caps_allow: let
+    CAPS = subtractLists caps_allow [
       "CAP_AUDIT_WRITE"
       "CAP_AUDIT_CONTROL"
       # TODO start first without and second with (files permission setting) ?
@@ -74,7 +74,7 @@ in {
     "--private-users-chown"
   ]
   ++ map (cap: "--drop-capability=${cap}") CAPS
-  ++ map (cap: "--capability=${cap}") cap_allow;
+  ++ map (cap: "--capability=${cap}") caps_allow;
   inherit cfgValid systemd;
 }
 

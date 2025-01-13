@@ -7,6 +7,7 @@ usage() {
   echo "Usage : nixunits build <container id> [options]"
   echo "Available options:"
   echo "  -a  <json list> capabilities allowed"
+  echo "  -bw  <json list> bind"
   echo "  -cc <service config content>"
   echo "  -cf <service file>"
   echo "  -p <JSON properties>"
@@ -56,7 +57,7 @@ START=false
 RESTART=false
 
 # shellcheck disable=SC2213
-while getopts "4:6a:c:p:f:i:n:H:R:hsr" opt; do
+while getopts "4:6a:b:c:p:f:i:n:H:R:hsr" opt; do
   case $opt in
     4)
       ip4=$OPTARG;;
@@ -72,6 +73,8 @@ while getopts "4:6a:c:p:f:i:n:H:R:hsr" opt; do
       fi;;
     a)
       CAPS=$OPTARG;;
+    b)
+      bind=$OPTARG;;
     c)
       case $OPTARG in
         c) serviceContent="${!OPTIND}"; OPTIND=$((OPTIND + 1))
@@ -132,15 +135,16 @@ then
   fi
 fi
 
-[ -n "$CAPS" ]       && _args+=(--argstr caps_allow "$CAPS")
-[ -n "$hostIp4" ]    && _args+=(--argstr hostIp4 "$hostIp4")
-[ -n "$hostIp6" ]    && _args+=(--argstr hostIp6 "$hostIp6")
-[ -n "$interface" ]  && _args+=(--argstr interface "$interface")
-[ -n "$ip4" ]        && _args+=(--argstr ip4 "$ip4")
-[ -n "$ip6" ]        && _args+=(--argstr ip6 "$ip6")
-[ -n "$ip4route" ]   && _args+=(--argstr ip4route "$ip4route")
-[ -n "$ip6route" ]   && _args+=(--argstr ip6route "$ip6route")
-[ -n "$properties" ] && _args+=(--argstr properties "$properties")
+[ -n "$CAPS" ]        && _args+=(--argstr caps_allow "$CAPS")
+[ -n "$hostIp4" ]     && _args+=(--argstr hostIp4 "$hostIp4")
+[ -n "$hostIp6" ]     && _args+=(--argstr hostIp6 "$hostIp6")
+[ -n "$interface" ]   && _args+=(--argstr interface "$interface")
+[ -n "$ip4" ]         && _args+=(--argstr ip4 "$ip4")
+[ -n "$ip6" ]         && _args+=(--argstr ip6 "$ip6")
+[ -n "$ip4route" ]    && _args+=(--argstr ip4route "$ip4route")
+[ -n "$ip6route" ]    && _args+=(--argstr ip6route "$ip6route")
+[ -n "$properties" ]  && _args+=(--argstr properties "$properties")
+[ -n "$bind" ]        && _args+=(--argstr bind "$bind")
 
 _args+=(--out-link "$CONTAINER_DIR/result")
 
@@ -154,11 +158,9 @@ test -n "$hostIp6"   && echo "  hostIp6: $hostIp6"
 test -n "$ip6route"  && echo "  ip6route: $ip6route"
 echo
 
-echo HEARE
-
 echo "nix-build NIXUNITS/default.nix" "${_args[@]}"
 # shellcheck disable=SC2086
-nix-build NIXUNITS/default.nix "${_args[@]}"
+nix-build NIXUNITS/default.nix "${_args[@]}" --show-trace
 
 _link="$CONTAINER_DIR/unit.conf"
 test -L "$_link" || ln -s "$CONTAINER_DIR/result/etc/nixunits/$id.conf" "$_link"
