@@ -12,6 +12,7 @@ usage() {
   echo "  -cf <service file>"
   echo "  -p <JSON properties>"
   echo "  -i  <interface>"
+  echo "  -n  <netns path>"
   echo "  -4  <IPv4>"
   echo "  -H4 <host IPv4>"
   echo "  -R4 <IPv4 route>"
@@ -87,6 +88,8 @@ while getopts "4:6a:b:c:p:f:i:n:H:R:hsr" opt; do
       properties=$OPTARG;;
     i)
       interface=$OPTARG;;
+    n)
+      netns_path=$OPTARG;;
     r)
       RESTART=true;;
     s)
@@ -145,6 +148,15 @@ fi
 [ -n "$ip6route" ]    && _args+=(--argstr ip6route "$ip6route")
 [ -n "$properties" ]  && _args+=(--argstr properties "$properties")
 [ -n "$bind" ]        && _args+=(--argstr bind "$bind")
+
+if [ -n "$netns_path" ]; then
+  if [ -n "$hostIp4" ] || [ -n "$hostIp6" ] || [ -n "$interface" ] || [ -n "$ip4" ] || [ -n "$ip6" ] || [ -n "$ip4route" ] || [ -n "$ip6route" ]
+  then
+    echo "netns option cannot be used together with other network-related options"
+    usage 1
+  fi
+  _args+=(--argstr netns_path "$netns_path")
+fi
 
 _args+=(--out-link "$CONTAINER_DIR/result")
 

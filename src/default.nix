@@ -9,6 +9,7 @@
 , ip4route? ""
 , ip6? ""
 , ip6route? ""
+, netns_path? ""
 , nixpkgs? <nixpkgs>
 , properties ? "{}"
 }:
@@ -57,7 +58,7 @@ let
       ${global.moduleName}.${id} = {
         inherit config;
         network = {
-          inherit hostIp4 hostIp6 interface ip4 ip4route ip6 ip6route;
+          inherit hostIp4 hostIp6 interface ip4 ip4route ip6 ip6route netns_path;
         };
         bind=_bind;
         caps_allow=_caps_allow;

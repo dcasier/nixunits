@@ -61,27 +61,30 @@ configure_host() {
   fi
 }
 
+context_set() {
+  NS_PID=$(host_exec "ps --ppid $MAINPID -o pid h")
+
+  if [ -z "$INTERFACE" ] && { { [ -n "$IP4" ] && [ -n "$HOST_IP4" ]; } || { [ -n "$IP6" ] && [ -n "$HOST_IP6" ]; }; }; then
+    if_infos=$(container_exec "ip -j link" | jq '.[] | select(.ifname != "lo")')
+    host_interface_id=$(echo "$if_infos" | jq '.link_index')
+    INTERFACE=$(echo "$if_infos" | jq -r '.ifname')
+    HOST_INTERFACE=$(ip -j link | jq -r ".[] | select(.ifindex == $host_interface_id) | .ifname")
+  fi
+}
+
 ###############################################################################
 # Main
 ###############################################################################
 
 log_block_msg "### nixunits START POST"
 
-if [ -z "$IP4" ] && [ -z "$IP6" ]; then
+if [ -z "$IP4" ] && [ -z "$IP6" ]
+then
   log_block_msg "### Private network without IP (exit)"
-  exit 0
+else
+  context_set
+  configure_container
+  configure_host
 fi
-
-NS_PID=$(host_exec "ps --ppid $MAINPID -o pid h")
-
-if [ -z "$INTERFACE" ] && { { [ -n "$IP4" ] && [ -n "$HOST_IP4" ]; } || { [ -n "$IP6" ] && [ -n "$HOST_IP6" ]; }; }; then
-  if_infos=$(container_exec "ip -j link" | jq '.[] | select(.ifname != "lo")')
-  host_interface_id=$(echo "$if_infos" | jq '.link_index')
-  INTERFACE=$(echo "$if_infos" | jq -r '.ifname')
-  HOST_INTERFACE=$(ip -j link | jq -r ".[] | select(.ifindex == $host_interface_id) | .ifname")
-fi
-
-configure_container
-configure_host
 
 log_msg "### nixunits END POST ###"

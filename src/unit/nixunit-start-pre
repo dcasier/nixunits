@@ -1,9 +1,24 @@
-#!/bin/sh
-set -e
+#!/bin/bash
+set -eo pipefail
+trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 
+# shellcheck disable=SC1091
 . NIXUNITS/bin/common.sh
 
-LOG=$(log "$NAME")
+log_msg() {
+  echo "$1" >&2
+}
 
-echo "[$(date)] - - - START PRE - - - $NAME" >>"$LOG"
-echo >>"$LOG"
+log_block_msg() {
+  log_msg "########################################"
+  log_msg "# $1"
+  log_msg "########################################"
+}
+
+###############################################################################
+# Main
+###############################################################################
+
+# log_block_msg "### nixunits START PRE"
+
+# log_msg "### nixunits END PRE ###"

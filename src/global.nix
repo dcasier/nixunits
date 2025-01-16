@@ -79,6 +79,8 @@ let
         NSPAWN_ARGS="${
           optionalString (cfg.nspawnArgs != [])
             (concatStringsSep " " cfg.nspawnArgs)
+          + optionalString (isNetNS cfg)
+            " --network-namespace-path=${cfg.network.netns_path}"
           + optionalString (isNetPriv cfg)
             " --private-network"
           + optionalString (isNetVEth cfg)
@@ -102,8 +104,9 @@ let
     environment.etc = mapAttrs' _conf_unit cfg;
   };
 
+  isNetNS = cfg : cfg.network.netns_path != "";
   isNetVEth = cfg: cfg.network.hostIp4 != "" || cfg.network.hostIp6 != "";
-  isNetPriv = cfg: (cfg.network.ip4 == "" && cfg.network.ip6 == "") || (isNetVEth cfg);
+  isNetPriv = cfg: !(isNetNS cfg) && ((cfg.network.ip4 == "" && cfg.network.ip6 == "") || (isNetVEth cfg));
 
   security = import ./security.nix {inherit lib;};
 
@@ -208,6 +211,10 @@ in with lib; {
                     type = str;
                   };
                   ip6route = mkOption {
+                    default = "";
+                    type = str;
+                  };
+                  netns_path = mkOption {
                     default = "";
                     type = str;
                   };
