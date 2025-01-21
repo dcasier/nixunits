@@ -12,7 +12,8 @@ usage() {
   echo "  -cf <service file>"
   echo "  -p <JSON properties>"
   echo "  -i  <interface>"
-  echo "  -n  <netns path>"
+  echo "  -ni  <netns uuid>"
+  echo "  -np  <netns path>"
   echo "  -4  <IPv4>"
   echo "  -H4 <host IPv4>"
   echo "  -R4 <IPv4 route>"
@@ -89,7 +90,12 @@ while getopts "4:6a:b:c:p:f:i:n:H:R:hsr" opt; do
     i)
       interface=$OPTARG;;
     n)
-      netns_path=$OPTARG;;
+      case $OPTARG in
+        i) netns_uuid="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        p) netns_path="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        *) echo "Invalid option for -n"; usage 1;;
+      esac
+      ;;
     r)
       RESTART=true;;
     s)
@@ -168,6 +174,7 @@ test -n "$hostIp4"   && echo "  hostIp4: $hostIp4"
 test -n "$ip6"       && echo "  ip6: $ip6"
 test -n "$hostIp6"   && echo "  hostIp6: $hostIp6"
 test -n "$ip6route"  && echo "  ip6route: $ip6route"
+test -n "$netns_uuid"  && echo "  netns_uuid: $netns_uuid"
 echo
 
 echo "nix-build NIXUNITS/default.nix" "${_args[@]}"

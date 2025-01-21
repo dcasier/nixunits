@@ -22,7 +22,7 @@ stdenv.mkDerivation rec {
     " $out/bin/*
 
     sed -i "
-      3i export PATH=${jq}/bin:${libcap}/bin:${iproute2}/bin:${procps}/bin:${coreutils-full}/bin:${util-linux}/bin
+      3i export PATH=${jq}/bin:${libcap}/bin:${iproute2}/bin:${procps}/bin:${coreutils-full}/bin:${util-linuxMinimal}/bin
       s|NIXUNITS|$out|
     " $out/unit/*
   '';
