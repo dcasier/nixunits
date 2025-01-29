@@ -7,6 +7,7 @@ usage() {
   echo "Usage : nixunits status <container id> [options]"
   echo "Available options:"
   echo "  -cc <service config content (for comparison)>"
+  echo "  -d details"
   echo "  -o <output [json/plain]>"
   echo "  -h, --help"
   echo
@@ -23,17 +24,19 @@ test "$id" = "help" && usage 0
 test "$id" = "--help" && usage 0
 shift
 
+DETAILS=false
 OUTPUT="plain"
 
-while getopts "c:o:h:" opt; do
+while getopts "c:do:h:" opt; do
   case $opt in
     c)
       case $OPTARG in
         c) serviceContent="${!OPTIND}"; OPTIND=$((OPTIND + 1))
           test "$serviceContent" == "-" && serviceContent=$(cat);;
         *) echo "Invalid option for -cc"; usage 1;;
-      esac
-      ;;
+      esac;;
+    d)
+      DETAILS=true;;
     o)
       if [ "$OPTARG" != "plain" ] && [ "$OPTARG" != "json" ]; then
         echo "Invalid output format : $OPTARG"
@@ -53,15 +56,23 @@ NIX_SAME=false
 DATA_EXIST=false
 DECLARED_IN_NIXOS=false
 STATUS=$(test -d "$(unit_dir "$id")" && echo "created" || echo "initial")
-STARTED_INFO=$(machinectl -o json | jq ".[] | select(.machine == \"$id\")")
-if [ "$STARTED_INFO" != "" ]
-then
-  STATUS="started"
-  OS=$(echo "$STARTED_INFO" | jq -r .os)
-  VERSION=$(echo "$STARTED_INFO" | jq -r .version)
-  ADDRESSES=$(echo "$STARTED_INFO" | jq -r .addresses)
-fi
 
+if [ "$DETAILS" == "true" ]
+then
+  STARTED_INFO=$(machinectl -o json | jq ".[] | select(.machine == \"$id\")")
+  if [ "$STARTED_INFO" != "" ]
+  then
+    STATUS="started"
+    OS=$(echo "$STARTED_INFO" | jq -r .os)
+    VERSION=$(echo "$STARTED_INFO" | jq -r .version)
+    ADDRESSES=$(echo "$STARTED_INFO" | jq -r .addresses)
+  fi
+else
+  sub_state=$(machinectl show "$id" |grep ^State | cut -d'=' -f2)
+  if [ "$sub_state" == "running" ]; then
+    STATUS="started"
+  fi
+fi
 _unit_conf=$(unit_conf "$id")
 _unit_nix=$(unit_nix "$id")
 
@@ -92,7 +103,7 @@ then
     echo "  declared in nixos configuration : $DECLARED_IN_NIXOS"
     echo "  config exist : $CONF_EXIST"
     echo "  data exist : $DATA_EXIST"
-    if [ "$STATUS" == "started" ]
+    if [ "$DETAILS" == "true" ] && [ "$STATUS" == "started" ]
     then
       echo "  os : $OS"
       echo "  version : $VERSION"

@@ -44,7 +44,7 @@ _assert_equal() {
 }
 
 alias _nixunits=NIXUNITS/bin/nixunits
-_json() { _nixunits status $ID -o json; }
+_json() { _nixunits status $ID -d -o json; }
 _jq() { _json | jq -r ".$1"; }
 _json_without_addr() { _json | jq 'del(.addresses)'; }
 
@@ -97,13 +97,13 @@ fi
 
 if _step 3 "IPv6 auto-generated"; then
   nixunits build $ID -cc "$httpd_def" -6 -s >/dev/null
-  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
+  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED_DETAILS"
   _ping "$(nixunits ip6_get "$ID")" | grep -A 1 statistiques
 fi
 
 if _step 4 "Restart"; then
   nixunits build $ID -cc "$httpd_def" -6 -r >/dev/null
-  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
+  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED_DETAILS"
   _ping "$(nixunits ip6_get "$ID")" | grep -A 1 statistiques
   nixunits delete $ID -f
   _assert_equal "$(_json)" "$STATUS_1_INITIAL_WITH_DATA"
@@ -112,7 +112,7 @@ fi
 if _step 5 "IPv4 restart"; then
   nixunits build $ID -cc "$httpd_def" \
     -4 "$PRIVATE_IP4" -H4 "$PRIVATE_HOST_IP4" -r >/dev/null
-  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
+  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED_DETAILS"
   _ping "$PRIVATE_IP4" | grep -A 1 statistiques
   nixunits delete $ID -fr
   _assert_equal "$(_json)" "$STATUS_1_INITIAL"
@@ -122,7 +122,7 @@ if _step 6 "IPv4 and IPv6 restart"; then
   nixunits build $ID -cc "$httpd_def" \
     -4 "$PRIVATE_IP4" -H4 "$PRIVATE_HOST_IP4" \
     -6 "$PRIVATE_IP6" -H6 "$PRIVATE_HOST_IP6" -r >/dev/null
-  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED"
+  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED_DETAILS"
   _ping "$PRIVATE_IP4" | grep -A 1 statistiques
   _ping "$PRIVATE_IP6" | grep -A 1 statistiques
   nixunits delete $ID -fr

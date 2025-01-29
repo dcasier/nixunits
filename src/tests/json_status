@@ -50,6 +50,20 @@ EOF
 STATUS_1_STARTED=$(cat <<EOF
 {
   "id": "8643a4f5-c137-44ef-953e-e8b4aca9f924",
+  "os": "",
+  "status": "started",
+  "version": "",
+  "data_exist": true,
+  "config_exist": true,
+  "nix_same": false,
+  "declared_in_nixos": false
+}
+EOF
+)
+
+STATUS_1_STARTED_DETAILS=$(cat <<EOF
+{
+  "id": "8643a4f5-c137-44ef-953e-e8b4aca9f924",
   "os": "nixos",
   "status": "started",
   "version": "$VERSION",
