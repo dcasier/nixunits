@@ -55,7 +55,7 @@ CONF_EXIST=false
 NIX_SAME=false
 DATA_EXIST=false
 DECLARED_IN_NIXOS=false
-STATUS=$(test -d "$(unit_dir "$id")" && echo "created" || echo "initial")
+STATUS=$(test -f "$(unit_conf "$id")" && echo "created" || echo "initial")
 
 if [ "$DETAILS" == "true" ]
 then

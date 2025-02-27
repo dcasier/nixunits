@@ -179,7 +179,7 @@ echo
 
 echo "nix-build NIXUNITS/default.nix" "${_args[@]}"
 # shellcheck disable=SC2086
-nix-build NIXUNITS/default.nix "${_args[@]}" --show-trace
+nix-build NIXUNITS/default.nix "${_args[@]}"
 
 _link="$CONTAINER_DIR/unit.conf"
 test -L "$_link" || ln -s "$CONTAINER_DIR/result/etc/nixunits/$id.conf" "$_link"
