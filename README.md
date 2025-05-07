@@ -18,9 +18,9 @@ Travaux, à titre expérimentales, de mini-conteneurs Nix sécurisés, pour la p
 
 ### Niveau réseau, 3 implémentations
 
- - pas de conf réseau => private-network
+ - private-network, si aucune configuration réseau spécifié
  - pas d'interface et host_ip => private-network network-veth (host_ip, c'est celle de l'interface ve-XXX)
- - interface => réseau uniquement dans le conteneur (host_ip non supporté)
+ - interface seule => réseau uniquement dans le conteneur
 
 ## Installation
 
@@ -42,7 +42,7 @@ imports = [
 #### Create
 
 ```
-[root@aevoo-home:~]# nixunits create pg -cn postgresql -6 -r
+[root@aevoo-home:~]# nixunits build pg -cc "{ services.postgresql.enable = true; }" -6 -r
 Container : pg
   ip6: fc00::bd30:9ff2:2
   hostIp6: fc00::bd30:9ff2:1
@@ -97,7 +97,7 @@ in {
   };
 }
 
-[root@aevoo-home:/var/lib/nixunits]# nixunits create pg -cn postgresql -6 -r
+[root@aevoo-home:/var/lib/nixunits]# nixunits build pg -cc "{ services.postgresql.enable = true; }" -6 -r
 (...)
 
 [root@aevoo-home:/var/lib/nixunits]# nix-shell -p postgresql
