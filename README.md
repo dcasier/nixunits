@@ -78,9 +78,7 @@ postgres=#
 #### Customs service
 
 ```
-[root@aevoo-home:~]# cd /var/lib/nixunits
-[root@aevoo-home:/var/lib/nixunits]# install -m 664 services/postgresql.nix customs/
-[root@aevoo-home:/var/lib/nixunits]# cat customs/postgresql.nix 
+[root@aevoo-home:/var/lib/nixunits]# cat > customs/postgresql.nix >> EOF 
 { lib, pkgs, ... }: let
 
 in {
@@ -96,8 +94,9 @@ in {
     '';
   };
 }
+EOF 
 
-[root@aevoo-home:/var/lib/nixunits]# nixunits build pg -cc "{ services.postgresql.enable = true; }" -6 -r
+[root@aevoo-home:/var/lib/nixunits]# nixunits build pg -cf /var/lib/nixunits/customs/postgresql.nix -6 -r
 (...)
 
 [root@aevoo-home:/var/lib/nixunits]# nix-shell -p postgresql

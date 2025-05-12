@@ -37,12 +37,12 @@ usage() {
 EOF"
   echo
   echo " nixunits build my_pg1 -cc \"\$CONTENT\" -6 'fc00::a:2' -H6 'fc00::a:1'"
-  echo " nixunits build my_pg2 -cf ./postgresql.nix -4 192.168.1.1 -R4 192.168.1.254"
+  echo " nixunits build my_pg2 -cf ./my_wordpress.nix -4 192.168.1.1 -R4 192.168.1.254"
   echo
   echo "Auto generated IPv6, from name (private network only):"
-  echo " nixunits build my_nc -ci ./nextcloud.nix -6"
+  echo " nixunits build my_nc -cf ./my_wordpress.nix -6"
   echo
-  echo " nixunits build mysql -ci ./mysql.nix -6 -s -a '[\"CAP_DAC_OVERRIDE\"]'"
+  echo " nixunits build mysql -cf ./my_wordpress.nix -6 -s -a '[\"CAP_DAC_OVERRIDE\"]'"
 
   test -n "$1" && exit "$1"
   exit 0
