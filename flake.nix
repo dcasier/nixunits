@@ -12,6 +12,7 @@
     nixosModules.default = import ./module.nix;
 
     packages = forAllSystems (pkgs: {
+      portable = import ./src/portable { nixpkgs = pkgs; };
       nixunits = import ./src/nixunits.nix { inherit (pkgs) lib stdenv pkgs; };
     });
 

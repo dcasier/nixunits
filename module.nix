@@ -20,7 +20,7 @@ let
 in
 
 {
-  config = recursiveUpdate (global.conf config.${moduleName}) {
+  config = recursiveUpdate (global.conf config.${moduleName}) systemd // {
 
     environment.systemPackages = [
       nixunits
