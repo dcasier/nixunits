@@ -17,6 +17,11 @@ usage() {
 }
 
 id=$1
+
+if [ "$id" = "-h" ] || [ "$id" = "--help" ]; then
+  usage
+fi
+
 test -z "$id" && usage 1
 shift
 
