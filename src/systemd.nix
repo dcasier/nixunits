@@ -42,8 +42,6 @@ let
   };
 
 in {
-  inherit serviceConfig unit;
-
   systemd = {
     services = listToAttrs (filter (x: x.value != null) (
       [{
