@@ -15,11 +15,14 @@ pkgs.writeShellApplication {
       fi
     done
 
-    mkdir -p /usr/local/lib/nixunits /var/lib/nixunits/containers
+    mkdir -p /var/lib/nixunits/containers
 
-    rm -fr /usr/local/lib/nixunits/*
-    cp -r ${nixunits}/* /usr/local/lib/nixunits/
-    install -Dm755 "${nixunits}/bin/nixunits" /usr/local/bin/nixunits
+    src="${nixunits}/bin/nixunits"
+    dest=/usr/local/bin/nixunits
+    if [[ -e "$dest" ]] || [[ -L "$dest" ]]; then
+      /bin/rm "$dest"
+    fi
+    ln -s "$src" "$dest"
 
     units=(
       "portable/nixunits@.service"
@@ -31,7 +34,7 @@ pkgs.writeShellApplication {
         src="${nixunits}/''${unit}"
         dest="/etc/systemd/system/$(basename "$unit")"
 
-        if [[ -L "$dest" ]] || [[ -L "$dest" ]]; then
+        if [[ -e "$dest" ]] || [[ -L "$dest" ]]; then
           /bin/rm "$dest"
         fi
         ln -s "$src" "$dest"
