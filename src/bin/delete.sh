@@ -52,7 +52,7 @@ CONTAINER_DIR=$(unit_dir "$id")
 if ! $FORCE
 then
   in_nixos_failed "$id"
-  read -n 1 -p "Delete $CONTAINER_DIR ? [y/N] : " AGREE
+  read -rn 1 -p "Delete $CONTAINER_DIR ? [y/N] : " AGREE
   if ! expr "$AGREE" : '[yY]' >/dev/null
   then
       exit 0

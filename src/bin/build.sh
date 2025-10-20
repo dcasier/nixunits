@@ -128,9 +128,8 @@ test "$FORCE" != "true" && in_nixos_failed "$id"
 
 CONTAINER_DIR=$(unit_dir "$id")
 
-test ! -d "$CONTAINER_DIR" && install -m 2750 -d "$CONTAINER_DIR"
-test -d "$CONTAINER_DIR/root" || install -g root -d "$CONTAINER_DIR/root"
-chmod g-s "$CONTAINER_DIR/root"
+mkdir -p "$CONTAINER_DIR/root/usr"
+chmod 2750 "$CONTAINER_DIR"
 
 _args=(--argstr id "$id")
 if [ -n "$serviceFile" ] || [ -n "$serviceContent" ]

@@ -17,12 +17,27 @@ pkgs.writeShellApplication {
 
     mkdir -p /usr/local/lib/nixunits /var/lib/nixunits/containers
 
+    rm -fr /usr/local/lib/nixunits/*
+    cp -r ${nixunits}/* /usr/local/lib/nixunits/
     install -Dm755 "${nixunits}/bin/nixunits" /usr/local/bin/nixunits
-    cp -r "${nixunits}/bin" "${nixunits}/services" "${nixunits}/tests" "${nixunits}/unit" /usr/local/lib/nixunits/
 
-    install -Dm644 ${nixunits}/unit/* /etc/systemd/system/
+    units=(
+      "portable/nixunits@.service"
+      "unit/nixunit-start-pre"
+      "unit/nixunit-start-post"
+    )
+
+    for unit in "''${units[@]}"; do
+        src="${nixunits}/''${unit}"
+        dest="/etc/systemd/system/$(basename "$unit")"
+
+        if [[ -L "$dest" ]] || [[ -L "$dest" ]]; then
+          /bin/rm "$dest"
+        fi
+        ln -s "$src" "$dest"
+    done
     systemctl daemon-reload
 
-    echo "[nixunits] ✅ Done"
+    echo "[nixunits] Done"
   '';
 }
