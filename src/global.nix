@@ -32,6 +32,7 @@ let
       isContainer = true;
       postBootCommands = ''
         ${pkgs.libcap}/bin/capsh --print
+        ln -sf ${pkgs.bashInteractive}/bin/bash /bin/bash
       '';
     };
     environment = {

@@ -72,7 +72,7 @@ in {
     "--no-new-privileges=yes"
     "--private-users=pick"
     "--private-users-chown"
-  ]
+  ]# TODO remove private-users if netns
   ++ map (cap: "--drop-capability=${cap}") CAPS
   ++ map (cap: "--capability=${cap}") caps_allow;
   inherit cfgValid systemd;

@@ -20,8 +20,8 @@ usage() {
   echo "  -6  [IPv6] "
   echo "  -H6 <host IPv6>"
   echo "  -R6 <IPv6 route>"
-  echo "  -f  force ?"
-  echo "  -h, --help"
+  echo "  -f  force"
+  echo "  -h  help"
   echo "  -r  restart ?"
   echo "  -s  start ?"
   echo

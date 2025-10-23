@@ -15,30 +15,38 @@ pkgs.writeShellApplication {
       fi
     done
 
-    mkdir -p /var/lib/nixunits/containers
+    mkdir -p /var/lib/nixunits/containers /var/lib/nixunits/etc/systemd
+    cat >/var/lib/nixunits/etc/systemd/nixunits@.service <<EOF
+    [Unit]
+    Description=NixUnit container '%i'
+    RequiresMountsFor=/var/lib/nixunits/containers/%i
 
-    src="${nixunits}/bin/nixunits"
-    dest=/usr/local/bin/nixunits
-    if [[ -e "$dest" ]] || [[ -L "$dest" ]]; then
-      /bin/rm "$dest"
-    fi
-    ln -s "$src" "$dest"
+    [Service]
+    Environment=SYSTEMD_NSPAWN_UNIFIED_HIERARCHY=1
+    EnvironmentFile=/var/lib/nixunits/containers/%i/unit.conf
 
-    units=(
-      "portable/nixunits@.service"
-      "unit/nixunit-start-pre"
-      "unit/nixunit-start-post"
-    )
+    ExecStartPre=${nixunits}/unit/nixunit-start-pre %i
+    ExecStart=/usr/bin/systemd-nspawn --machine=%i -D /var/lib/nixunits/containers/%i/root --notify-ready=yes --kill-signal=SIGRTMIN+3 \$NSPAWN_ARGS \''\${SYSTEM_PATH}/init
+    ExecStartPost=${nixunits}/unit/nixunit-start-post %i
 
-    for unit in "''${units[@]}"; do
-        src="${nixunits}/''${unit}"
-        dest="/etc/systemd/system/$(basename "$unit")"
+    ExecStop=/usr/bin/machinectl terminate %i
+    ExecStopPost=/usr/bin/machinectl wait %i || true
 
-        if [[ -e "$dest" ]] || [[ -L "$dest" ]]; then
-          /bin/rm "$dest"
-        fi
-        ln -s "$src" "$dest"
-    done
+    Delegate=true
+    KillMode=mixed
+    Restart=on-failure
+    RestartForceExitStatus=133
+    Slice=machine.slice
+    SuccessExitStatus=133
+    SyslogIdentifier=nixunit %i
+    TasksMax=16384
+    TimeoutStartSec=1min
+    Type=notify
+    EOF
+
+    ln -sfn "${nixunits}/bin/nixunits" /usr/local/bin/nixunits
+    ln -sfn "/var/lib/nixunits/etc/systemd/nixunits@.service" /etc/systemd/system/nixunits@.service
+
     systemctl daemon-reload
 
     echo "[nixunits] Done"

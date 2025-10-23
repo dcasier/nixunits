@@ -19,6 +19,6 @@ log_block_msg() {
 # Main
 ###############################################################################
 
-# log_block_msg "### nixunits START PRE"
+log_block_msg "### nixunits START PRE"
 
-# log_msg "### nixunits END PRE ###"
+log_msg "### nixunits END PRE ###"

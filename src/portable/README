@@ -1,0 +1,4 @@
+git clone https://github.com/dcasier/nixunits
+cd nixunits
+nix run .#portable
+nix profile add .#portable
