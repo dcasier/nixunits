@@ -84,16 +84,13 @@ let
         NSPAWN_ARGS="${
           optionalString (cfg.nspawnArgs != [])
             (concatStringsSep " " cfg.nspawnArgs)
-          + optionalString (isNetNS cfg)
-            " --network-namespace-path=${cfg.network.netns_path}"
-          + optionalString (isNetPriv cfg)
-            " --private-network"
-          + optionalString (vethEnabled cfg.network.interfaces)
-            " --network-veth"
+          + optionalString (isNetNS cfg) " --network-namespace-path=${cfg.network.netns_path}"
+          + optionalString (isNetPriv cfg) " --private-network"
+          + optionalString vethEnabled " --network-veth"
           + lib.concatStringsSep " " (
             lib.mapAttrsToList
-              (name: _: " --network-interface=${name}")
-              cfg.network.interfaces
+              (name: _: "--network-interface=${name}")
+              nonVethIfaces
           )
         }   --overlay-ro=/var/lib/nixunits/store/default/root/nix/store/:/var/lib/nixunits/containers/${name}/root/nix/store:/nix/store"
         ${lib.concatStringsSep "\n" (
@@ -123,6 +120,11 @@ let
     environment.etc = mapAttrs' _conf_unit cfg;
   };
 
+  hasVeth = interfaces: builtins.any isVeth (builtins.attrValues interfaces);
+  isVeth = iface: iface.hostIp4 != "" || iface.hostIp6 != "";
+  vethEnabled = hasVeth cfg.network.interfaces;
+  nonVethIfaces = lib.filterAttrs (_: iface: !isVeth iface) cfg.network.interfaces;
+
   vethEnabled = ifaces: builtins.length (
     builtins.filter (iface: iface.hostIp4 != "" || iface.hostIp6 != "")
       (builtins.attrValues ifaces)
@@ -130,8 +132,6 @@ let
 
   isNetPriv = cfg: !(cfg ? network);
   isNetNS = cfg : cfg ? network && cfg.network ? netns_path && cfg.network.netns_path != "";
-  asInterface = cfg : cfg ? network && cfg.network ? interfaces && cfg.network.interfaces != {};
-  isNetVEth = cfg: cfg ? network &&  (cfg.network.hostIp4 != "" || cfg.network.hostIp6 != "");
 
   security = import ./security.nix {inherit lib;};
 
