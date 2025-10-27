@@ -113,26 +113,23 @@ environment.systemPackages = [
 ];
 ```
 
-### Debian/Ubuntu + Nix
+### Debian + Nix
 
 Dépendances : systemd-container, overlayfs, yq
 
 ```bash
-nix run #portable --install
-nixunits-install
+nix run github:dcasier/nixunits#portable
 ```
 
 ---
 
-## Démarrage rapide (OVS + VLAN)
-
+## Démarrage rapide
+``
 **properties.json**
 ```json
 {
   "id": "web2",
-  "ip4": "192.168.20.10/24",
-  "bridge": "brsrv",
-  "vlan": 30
+  "ip4": "192.168.20.10/24"
 }
 ```
 
@@ -144,10 +141,6 @@ nixunits-install
   network.interfaces = {
     "eth0" = {
       ip4 = properties.ip4;
-      ovs = {
-        bridge = properties.bridge;
-        vlan = properties.vlan;
-      };
     };
   };
 
@@ -167,7 +160,9 @@ nixunits build web2 -n config.nix -j properties.json -s
 Inspection :
 
 ```bash
+journalctl -M web2 -b
 journalctl -u nixunits@web2 -f
+journalctl -M web2 -u nginx
 nixunits shell web2
 ```
 
@@ -228,7 +223,6 @@ nixunits shell web2
 {
   "id": "fw1",
   "ip4": "192.168.50.10/24",
-  "nft": "table inet filter {\n  chain input {\n    type filter hook input priority 0;\n    accept\n  }\n}"
 }
 ```
 
@@ -241,31 +235,19 @@ nixunits shell web2
     services.nginx.enable = true;
     system.stateVersion = "25.05";
   };
-}
-```
-
----
-
-### Paramètres sysctl spécifiques au conteneur
-
-**properties.json**
-```json
-{
-  "id": "rt1",
-  "ip4": "192.168.99.1/24",
-  "sysctl": "net.ipv4.ip_forward=1\nnet.ipv6.conf.all.forwarding=1"
-}
-```
-
-**config.nix**
-```nix
-{ pkgs, properties, ... }: {
-  network.interfaces.eth0.ip4 = properties.ip4;
-
-  config = {
-    services.frr.zebra.enable = true;
-    system.stateVersion = "25.05";
+  network = {
+      nft = ''
+        table inet filter {
+          chain input {
+            type filter hook input priority 0;
+            accept
+          }
+        }
+      '';  
   };
+  sysctl = ''
+    net.ipv4.ip_forward=1
+  '';
 }
 ```
 
@@ -336,6 +318,4 @@ Opérationnel dans des environnements Aevoo.
 > NixUnits exécute **des services NixOS** isolés  
 > sans daemon supplémentaire  
 > avec un réseau configurable et une sécurité explicite.
-
-> **Nix + systemd**. Rien d’autre.
 
