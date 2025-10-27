@@ -49,6 +49,7 @@ pkgs.writeShellApplication {
     Type=notify
     EOF
 
+    mkdir -p /usr/local/bin
     ln -sfn "${nixunits}/bin/nixunits" /usr/local/bin/nixunits
     ln -sfn "/var/lib/nixunits/etc/systemd/nixunits@.service" /etc/systemd/system/nixunits@.service
 
