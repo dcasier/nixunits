@@ -2,62 +2,39 @@
 
 Exécutez des services **NixOS** dans des conteneurs **légers**, **déclaratifs**, et **isolés**.
 
-NixUnits combine :
+Inspiré de **nixos-container** et **extra-container**,
+conçu initialement pour Aevoo et utilisable sur un hôte Linux systemd.
 
-* **NixOS** dans le conteneur  
+## Fonctionnalités
+
+NixUnits permet d’exécuter du NixOS sur n’importe quel Linux systemd, avec une isolation par service,
+en conservant une gestion purement déclarative.
+
+* **Nix**  
   Le service fonctionne dans un environnement système minimal et reproductible.
+* S'appuie sur **NixOS/nixpkgs** pour la construction de l'image
 * **systemd-nspawn** sur l’hôte  
-  Pas de runtime supplémentaire, orchestration native via `systemctl` et `machinectl`.
+  Orchestration via `systemctl` et `machinectl`.
 * **Overlay Nix store partagé**  
   Duplication minimale entre conteneurs.
 * **Réseau configurable**  
   Interfaces, IPs, OVS, VLAN, netns, routes.
 * **Sécurité explicite**  
   Capabilities contrôlées par la déclaration Nix.
+* Empreinte minimale : **systemd-minimal** et dépendances limitées.
+
+
+> Ce qui est déclaré est ce qui est exécuté.
 
 ---
 
-## Pourquoi NixUnits ?
+## Empreinte mémoire et processus
 
-| Besoin | Réponse |
-|--------|---------|
-| Déployer un service NixOS isolé | Un conteneur = un service |
-| Éviter Dockerfile, couches mutables | Configuration **Nix** uniquement |
-| Utiliser systemd pour orchestrer | Unités `nixunits@<id>.service` |
-| Réseau adapté à la production | Définition déclarative |
-| Sécurité lisible | Capabilities définies dans la config du conteneur |
+Un conteneur NixUnits lance généralement :
 
-> Ce qui est déclaré est **exactement** ce qui est exécuté.
-
----
-
-## Architecture
-
-```
-Host (Linux systemd)
- └─ systemd-nspawn (machine.slice)
-     ├─ /var/lib/nixunits/store/default/root  ← base NixOS ro
-     └─ /var/lib/nixunits/containers/<id>/
-         ├─ root/     ← writable
-         ├─ (work/)
-         ├─ (merged/)
-         └─ unit.conf ← paramètres runtime générés
-```
-
-Cycle de build :
-
-1. build de base (store default)
-2. overlay et build final (propriétés du conteneur)
-
----
-
-## Systemd minimal
-
-Présent :  
-✓ PID 1  
-✓ journald conteneur  
-✓ services déclarés  
-✓ cgroups/slice dédiée
+* systemd-minimal (PID1)
+* journald conteneur  
+* le service principal + auxiliaires
 
 Supprimé :  
 ✗ logind  
@@ -67,16 +44,6 @@ Supprimé :
 ✗ autres services inutiles pour un workload conteneurisé
 
 > Suffisant pour orchestrer un service complet.  
-
----
-
-## Empreinte mémoire et processus
-
-Un conteneur NixUnits lance généralement :
-
-* systemd-minimal (PID1)
-* journald interne
-* le service principal + auxiliaires
 
 Overhead structurel faible.
 
@@ -115,7 +82,9 @@ environment.systemPackages = [
 
 ### Debian + Nix
 
-Dépendances : systemd-container, overlayfs, yq
+* Dépendance : systemd-container 
+* Les dépendances sur une infra non NixOS sont traités avec le store nix.
+* Le développement est initié depuis NixOS et est testé sous Debian : des oublis/bug peuvent exister => contact@aevoo.fr 
 
 ```bash
 nix run github:dcasier/nixunits#portable
@@ -124,8 +93,9 @@ nix run github:dcasier/nixunits#portable
 ---
 
 ## Démarrage rapide
-``
-**properties.json**
+
+
+**web2.json**
 ```json
 {
   "id": "web2",
@@ -134,7 +104,7 @@ nix run github:dcasier/nixunits#portable
 }
 ```
 
-**config.nix**
+**web_default.nix**
 ```nix
 { pkgs, properties, lib, ... }: let 
   get = path: default: lib.attrByPath path default properties;
@@ -143,14 +113,12 @@ nix run github:dcasier/nixunits#portable
 in {
   caps_allow = [ "CAP_NET_BIND_SERVICE" ];
 
-  network.interfaces = {
-    "eth0" = {
-      inherit ip4 hostIp4;
-    };
+  network.interfaces.veth = {
+    inherit ip4 hostIp4;
   };
 
   config = {
-    services.nginx.enable = true;
+    services.httpd.enable = true;
     system.stateVersion = "25.05";
   };
 }
@@ -159,7 +127,7 @@ in {
 Build + start :
 
 ```bash
-nixunits build web2 -n config.nix -j properties.json -s
+nixunits build web2 -n ./web_default.nix -j ./web2.json -s
 ```
 
 Inspection :
@@ -167,94 +135,182 @@ Inspection :
 ```bash
 journalctl -M web2 -b
 journalctl -u nixunits@web2 -f
-journalctl -M web2 -u nginx
+journalctl -M web2 -u httpd
 nixunits shell web2
 ```
 
 ---
 
-## Réseau : exemples avancés
+## Architecture
 
-### Deux interfaces OVS + VLANs
+```
+Host (Linux systemd)
+ └─ systemd-nspawn (machine.slice)
+     ├─ /var/lib/nixunits/store/default/root  ← base NixOS ro
+     └─ /var/lib/nixunits/containers/<id>/
+         ├─ root/     ← writable
+         ├─ (work/)
+         ├─ (merged/)
+         └─ unit.conf ← paramètres runtime générés
+```
+
+Cycle de build :
+
+1. build de base (store default)
+2. overlay et build final (propriétés du conteneur)
+
+---
+
+## Important
+
+### Build et overlay
+
+Les paramètres spécifiques à un conteneur (IP, noms, ...) doivent être fournis via properties.json.
+Le contenu de config.nix sera présent dans le store partagé (par défaut) aux autres conteneurs.
+
+> Cela ne concerne pas la **gestion des secrets**, qui reste identique à une configuration Nix standard.
+
+Exemple :
+
+✓ Correct (données propres au conteneur)
+```json
+{ "ip4": "10.0.0.2/31" }
+```
+
+✗ Incorrect (stocké dans le store partagé)
+```nix
+network.interfaces.veth.ip4 = "10.0.0.2/31";
+```
+
+
+
+### Conteneur "PID 1" mais **minimaliste**
+
+Systemd n'a pour fonction que de s'assurer du bon fonctionnement des services et de la gestion des logs.
+
+> D-Bus n’est pas fourni par défaut dans un conteneur NixUnits.
+
+Activé :
+ - Gestion des logs (depuis le host ou le conteneur)
+ - Gestion des process, dans le conteneur (stop, restart, ...)
+ - Services de base systemd
+
+## Exemple avancé
 
 **properties.json**
 ```json
 {
   "id": "router1",
-  "bridgeLan": "br-lan",
-  "vlanLan": 10,
-  "bridgeWan": "br-wan",
-  "vlanWan": 20,
-  "ipLan": "192.168.10.1/24",
-  "ipWan": "10.0.0.2/24"
+  "bridge":  "br0",
+  "ip4": "10.0.0.2/16",
+  "ip6":  "a:b:c:d::e/64",
+  "vlan": 4356,
+  "bridgeWan":  "br0",
+  "ip4Wan": "70.0.0.2/31",
+  "ip6Wan":  "2001:bc8::a/64",
+  "vlanWan": 356,
+  "ip4route":  "20.0.0.254",
+  "ip6route": "2001:bc8::ffff:ffff:ffff:fffe"
 }
 ```
 
 **config.nix**
 ```nix
-{ pkgs, properties, lib, ... }: {
+{ pkgs, properties, lib, ... }: let 
+  get = path: default: lib.attrByPath path default properties;
+  bridge    = get [ "bridge" ]     "br0";
+  ip4       = get [ "ip4" ]        "192.168.0.2/24";
+  ip6       = get [ "ip6" ]        "a:b:c:d::e/64";
+  vlan      = get [ "vlan" ]        4356;
+  bridgeWan = get [ "bridgeWan" ]  "br0";
+  ip4Wan    = get [ "ip4Wan" ]     "20.0.0.2/31";
+  ip6Wan    = get [ "ip6Wan" ]     "fe80::a/64";
+  vlanWan   = get [ "vlanWan" ]     356;
+  ip4route  = get [ "ip4route" ]   "20.0.0.254";
+  ip6route  = get [ "ip6route" ]   "fe80::ffff:ffff:ffff:fffe";
+in {
+  bind = [
+    "/srv/logs:/var/log/service:ro"
+  ];
   caps_allow = [ "CAP_NET_ADMIN" ];
-
-  network.interfaces = {
-    lan = {
-      ip4 = properties.ipLan;
-      ovs = {
-        bridge = properties.bridgeLan;
-        vlan = properties.vlanLan;
-      };
-    };
-    wan = {
-      ip4 = properties.ipWan;
-      ovs = {
-        bridge = properties.bridgeWan;
-        vlan = properties.vlanWan;
-      };
-    };
-  };
 
   config = {
     services.dnsmasq.enable = true;
     system.stateVersion = "25.05";
   };
-}
-```
+  extra = ''
+    # Contenu évalué par /bin/sh sur le conteneur 
+  '';
+  # netns_path = # incompatible avec la déclaration des interfaces et avec "private-user" (c.f. doc systemd-nspawn) 
 
----
-
-### Injection nftables dans le conteneur
-
-**properties.json**
-```json
-{
-  "id": "fw1",
-  "ip4": "192.168.50.10/24",
-}
-```
-
-**config.nix**
-```nix
-{ pkgs, properties, ... }: {
-  network.interfaces.eth0.ip4 = properties.ip4;
-
-  config = {
-    services.nginx.enable = true;
-    system.stateVersion = "25.05";
-  };
   network = {
-      nft = ''
+    interfaces = {
+        lan = {
+          inherit ip4 ip6;
+          ovs = {
+            inherit bridge vlan;
+          };
+        };
+        wan = {
+          ip4 = ip4Wan;
+          ip6 = ip6Wan;
+          ovs = {
+            bridge = bridgeWan;
+            vlan = vlanWan;
+          };
+        };
+    };
+    nft = ''
         table inet filter {
           chain input {
             type filter hook input priority 0;
             accept
           }
         }
-      '';  
+    '';  
+    inherit ip4route ip6route;
   };
+  nspawnArgs = ""; # Args systemd-nspawn 
   sysctl = ''
     net.ipv4.ip_forward=1
   '';
 }
 ```
+
+> Définitions déclarées dans le fichier nix/global.nix
+
+---
+
+## Limitations
+
+Ce projet est sous statut **expérimental**.
+Certaines fonctionnalités réseau nécessitent une configuration préalable sur l’hôte :
+
+| Fonction | Requis |
+|---------|--------|
+| Interfaces réseaux | veth, OVS, bridge, netns configurés |
+| OVS / VLAN | openvswitch installé |
+| nft | nftables actif |
+| netns_path | ip netns (ou équivalent) |
+
+Hormis pour OVS/private-network, nixUnits **n’automatise pas** le provisionnement réseau sur l’hôte.
+
+## Comparatif Docker / Podman vs NixUnits
+
+| Critère | Docker / Podman | NixUnits |
+|--------|----------------|----------|
+| Cible | Applications conteneurisées | Services NixOS isolés |
+| Construction | Dockerfile / OCI | Dérivations Nix (déclaratif) |
+| Distribution | Registres d’images | Code source Nix + store |
+| Système dans le conteneur | Pas nécessairement de systemd | Systemd-minimal |
+| Orchestration | Docker CLI, compose, K8s | Aevoo, systemctl, machinectl (ou déclaratif Nixos) |
+| Sécurité | Configuration de runtime | Déclaratif (nix) |
+| Portabilité | portable | Linux systemd uniquement |
+| Usage modèle | Dev & CI, portabilité applicative | Ops Nix sur infrastructure systemd |
+
+NixUnits ne vise pas à remplacer Docker/Podman.
+Il est conçu pour exécuter des **services NixOS** (sur le marketplace Aevoo) isolés sur un hôte Linux systemd,
+avec un contrôle réseau et une configuration entièrement déclaratifs.
 
 ---
 
@@ -264,8 +320,6 @@ nixunits shell web2
 nixunits <action> [options]
 ```
 
-Actions principales :
-
 | Action | Effet |
 |--------|------|
 | build <id> | créer ou mettre à jour le conteneur |
@@ -273,12 +327,20 @@ Actions principales :
 | shell / nsenter | entrer dans le conteneur |
 | list | conteneurs déclarés et actifs |
 | delete <id> | supprimer le conteneur |
+| * | wrapper machinectl $@ |
 
 ---
 
+## Dépannage
+
+* Option nix build -d active --show-trace
+* Solution testée sous Debian et NixOS
+* La gestion des logs est assurée par journalctl -M <machineID>
+* Pour toute question : contact@aevoo.fr
+
 ## Sécurité déclarative
 
-* User Namespace activé sauf `netns_path`
+* User Namespace activé sauf `netns_path` spécifié
 * Capabilities explicites
 
 ```nix
@@ -288,39 +350,4 @@ caps_allow = [ "CAP_NET_BIND_SERVICE" ];
 > Politique stricte par défaut, ouverture volontaire.
 
 ---
-
-## Support
-
-* Linux avec systemd PID1
-* OverlayFS
-* Nix (runtime + build)
-
-NixOS : prise en charge complète  
-Debian/Ubuntu : support fonctionnel via `nixunits-install`
-
-Certaines fonctionnalités réseau nécessitent des composants préalablement configurés sur l’hôte.
-
----
-
-## Cas d’usage
-
-* Services réseau isolés : nginx, dnsmasq, frr, powerdns…
-* Déploiement NixOS sur des hôtes non NixOS
-* Séparation stricte de responsabilités
-* Reproductibilité des environnements multi-services
-
----
-
-## État du projet
-
-Opérationnel dans des environnements Aevoo.  
-Évolution continue selon besoins utilisateurs.
-
----
-
-### Résumé
-
-> NixUnits exécute **des services NixOS** isolés  
-> sans daemon supplémentaire  
-> avec un réseau configurable et une sécurité explicite.
 

@@ -6,6 +6,7 @@ set -euo pipefail
 usage() {
   echo "Usage : nixunits build <container id> [options]"
   echo "Available options:"
+  echo "  -d  debug (show-trace)"
   echo "  -n  Nix config file"
   echo "  -j  JSON parameters file"
   echo "  -h  help"
@@ -23,11 +24,12 @@ test -z "$1" && usage 1
 test "$1" = "-h" && usage 0
 test "$1" = "--help" && usage 0
 
-START=false
-RESTART=false
-
-while getopts "n:j:hsr" opt; do
+ARGS=()
+while getopts "dn:j:hsr" opt; do
   case $opt in
+    d)
+      ARGS=("--show-trace")
+      ;;
     r)
       RESTART=true;;
     s)
@@ -51,6 +53,10 @@ in_nixos_failed "$ID"
 STORE_DEFAULT="/var/lib/nixunits/store/default"
 CONTAINER_DIR=$(unit_dir "$ID")
 
+START=false
+RESTART=false
+ARGS+=(--impure --no-link --store "$CONTAINER_DIR/merged")
+
 mkdir -p "$CONTAINER_DIR/merged" "$CONTAINER_DIR/root/usr" "$CONTAINER_DIR/work"
 chmod 2750 "$CONTAINER_DIR"
 _unix_nix="$(unit_nix "$ID")"
@@ -59,8 +65,7 @@ MK_CONTAINER="(builtins.getFlake \"path:_NIXUNITS_PATH_SED_\").lib.x86_64-linux.
 
 properties='{\"id\": \"dummy\"}'
 
-nix build --impure --no-link --store "$STORE_DEFAULT/root"\
-  --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
+nix build "${ARGS[@]}" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
 
 cleanup() {
   umount "$CONTAINER_DIR/merged"
@@ -70,8 +75,7 @@ mount -t overlay overlay -o "lowerdir=${STORE_DEFAULT}/root,upperdir=$CONTAINER_
 trap cleanup EXIT
 
 properties="builtins.readFile $PARAMETERS_FILE"
-RESULT_PATH=$(nix build --impure --no-link --print-out-paths --store "$CONTAINER_DIR/merged"\
-  --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = $properties;})")
+RESULT_PATH=$(nix build --print-out-paths "${ARGS[@]}" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = $properties;})")
 
 _ln_src="${CONTAINER_DIR}/root$(readlink -f "${CONTAINER_DIR}/root${RESULT_PATH}/etc/nixunits/$ID.conf")"
 _ln_dst="$CONTAINER_DIR/unit.conf"

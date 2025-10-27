@@ -65,6 +65,15 @@ let
   };
 
   _conf_unit = name: cfg: let
+      interfaces = cfg.network.interfaces or {};
+
+      isNetPriv = !(cfg ? network);
+      isNetNS = cfg ? network && cfg.network ? netns_path && cfg.network.netns_path != "";
+
+      isVeth = iface: iface.hostIp4 or "" != "" || iface.hostIp6 or "" != "";
+      vethEnabled = builtins.any isVeth (builtins.attrValues interfaces);
+      nonVethIfaces = (lib.filterAttrs (_: iface: !isVeth iface) interfaces);
+
       extraFile =
         if cfg.extra != ""
         then pkgs.writeText "${name}-extra.sh" cfg.extra
@@ -84,9 +93,9 @@ let
         NSPAWN_ARGS="${
           optionalString (cfg.nspawnArgs != [])
             (concatStringsSep " " cfg.nspawnArgs)
-          + optionalString (isNetNS cfg) " --network-namespace-path=${cfg.network.netns_path}"
-          + optionalString (isNetPriv cfg) " --private-network"
-          + optionalString (vethEnabled cfg) " --network-veth"
+          + optionalString (isNetNS) " --network-namespace-path=${cfg.network.netns_path}"
+          + optionalString (isNetPriv) " --private-network"
+          + optionalString (vethEnabled) " --network-veth"
           + lib.concatStringsSep " " (
             lib.mapAttrsToList
               (name: _: "--network-interface=${name}")
@@ -119,14 +128,6 @@ let
   conf = cfg: {
     environment.etc = mapAttrs' _conf_unit cfg;
   };
-
-  hasVeth = interfaces: builtins.any isVeth (builtins.attrValues interfaces);
-  isVeth = iface: iface.hostIp4 != "" || iface.hostIp6 != "";
-  vethEnabled = cfg: hasVeth cfg ? network && cfg.network ? interfaces && cfg.network.interfaces;
-  nonVethIfaces = lib.filterAttrs (_: iface: !isVeth iface) cfg.network.interfaces;
-
-  isNetPriv = cfg: !(cfg ? network);
-  isNetNS = cfg : cfg ? network && cfg.network ? netns_path && cfg.network.netns_path != "";
 
   security = import ./security.nix {inherit lib;};
 
