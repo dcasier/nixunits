@@ -126,7 +126,7 @@ let
   vethEnabled = ifaces: builtins.length (
     builtins.filter (iface: iface.hostIp4 != "" || iface.hostIp6 != "")
       (builtins.attrValues ifaces)
-  ) > 1;
+  ) >= 1;
 
   isNetPriv = cfg: !(cfg ? network);
   isNetNS = cfg : cfg ? network && cfg.network ? netns_path && cfg.network.netns_path != "";

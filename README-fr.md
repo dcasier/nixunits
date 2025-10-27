@@ -129,18 +129,23 @@ nix run github:dcasier/nixunits#portable
 ```json
 {
   "id": "web2",
-  "ip4": "192.168.20.10/24"
+  "ip4": "192.168.20.2/31",
+  "hostIp4": "192.168.20.1/31"
 }
 ```
 
 **config.nix**
 ```nix
-{ pkgs, properties, lib, ... }: {
+{ pkgs, properties, lib, ... }: let 
+  get = path: default: lib.attrByPath path default properties;
+  ip4     = get [ "ip4" ]             "10.0.0.2/31";
+  hostIp4 = get [ "hostIp4" ]         "10.0.0.1/31";
+in {
   caps_allow = [ "CAP_NET_BIND_SERVICE" ];
 
   network.interfaces = {
     "eth0" = {
-      ip4 = properties.ip4;
+      inherit ip4 hostIp4;
     };
   };
 
