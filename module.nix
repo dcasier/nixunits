@@ -6,10 +6,10 @@ let
   autoStartFilter = cfg:
     filterAttrs(n: v: v.autoStart) cfg;
 
-  global = import ./src/global.nix {inherit lib pkgs;};
+  global = import ./global.nix {inherit lib pkgs;};
   moduleName = global.moduleName;
 
-  nixunits = pkgs.callPackage ./src/nixunits.nix {
+  nixunits = pkgs.callPackage ./nixunits.nix {
     inherit (pkgs) lib stdenv;
     inherit pkgs;
   };
@@ -19,8 +19,8 @@ let
     Delegate = true;
     Environment="SYSTEMD_NSPAWN_UNIFIED_HIERARCHY=1";
     ExecStart="systemd-nspawn --machine=%i -D ${global.pathRoot "%i"} --notify-ready=yes --kill-signal=SIGRTMIN+3 $NSPAWN_ARGS \${SYSTEM_PATH}/init";
-    ExecStartPre="${nixunits}/unit/nixunit-start-pre";
-    ExecStartPost="${nixunits}/unit/nixunit-start-post";
+    ExecStartPre="${nixunits}/nix/unit/nixunit-start-pre";
+    ExecStartPost="${nixunits}/nix/unit/nixunit-start-post";
     EnvironmentFile = "${global.unitConf "%i"}";
     KillMode = "mixed";
     Restart = "on-failure";
@@ -37,7 +37,7 @@ let
   };
 
 #  startPost = pkgs.runCommand scriptStartPost { } ''
-#    install -D ${./src/unit/${scriptStartPost}} $out/bin/${scriptStartPost}
+#    install -D ${./unit/${scriptStartPost}} $out/bin/${scriptStartPost}
 #    chmod +x $out/bin/${scriptStartPost}
 #  '';
 

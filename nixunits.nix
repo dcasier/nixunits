@@ -7,24 +7,26 @@ stdenv.mkDerivation rec {
   src = ./.;
 
   buildPhase = with pkgs; ''
-    mkdir -p $out/bin $out/portable $out/services $out/tests $out/unit
+    mkdir -p $out/bin $out/nix $out/tests $out/unit
     cp $src/*.nix $out/
     cp $src/bin/* $out/bin/
-    cp $src/portable/* $out/portable/
-    cp $src/tests/* $out/tests/
-    cp $src/unit/* $out/unit/
+    cp -r $src/nix/ $out/
+    cp -r $src/tests/* $out/tests/
+    cp -r $src/unit/* $out/unit/
     ln -s ../tests/nixunits_tests $out/bin/
 
     patchShebangs $out/bin
 
     sed -i "
       s|evalConfig=.*|evalConfig=$share/eval-config.nix|
-      s|NIXUNITS|$out|
+      s|_NIXUNITS_PATH_SED_|$out|
     " $out/bin/*
 
     sed -i "
       3i export PATH=${jq}/bin:${libcap}/bin:${iproute2}/bin:${procps}/bin:${coreutils-full}/bin:${util-linuxMinimal}/bin
-      s|NIXUNITS|$out|
+      s|_NIXUNITS_PATH_SED_|$out|
+      s|_OPENVSWITCH_PATH_SED_|${pkgs.openvswitch}|
+      s|_NFT_BIN_SED_|${pkgs.nftables}/bin/nft|
     " $out/unit/*
   '';
 
@@ -34,7 +36,7 @@ stdenv.mkDerivation rec {
     platforms = platforms.linux;
     maintainers = [ maintainers.evoo ];
   };
-  nativeBuildInputs = with pkgs; [ jq ];
+  nativeBuildInputs = with pkgs; [ jq yq ];
 
   # phases = ["buildPhase"];
 }

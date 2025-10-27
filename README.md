@@ -41,6 +41,63 @@ imports = [
 
 #### Create
 
+```yaml
+mysql:
+  caps_allow:
+    - CAP_DAC_OVERRIDE
+  network:
+    netns_path: /run/netns/my_wordpress 
+  nix_service_file: /var/lib/nixunits/custom/mysql/default.nix
+my_wordpress:
+  # bind:
+  #   - 
+  network:
+    interfaces:
+      link1: # physical interface 
+        # hostIp4: 192.168.1.10 
+        # hostIp6: fc00::a:1
+        ip6: 2001:bc8:a:b:c:d:e:1/64
+        ip4: 192.168.1.10
+        ovs:
+          enable: true
+          vlan: 3456
+    ip4route: 192.168.1.254
+    ip6route: fe80::1
+  nix_service_file: /var/lib/nixunits/custom/wp/default.nix
+  properties: # nix service file inputs
+    hostname: my_wordpress.domain.org
+    themes: [ "twentytwentythree" ]
+    
+    
+dnsdist:
+  bind:
+    - /tmp
+  caps_allow:
+    - CAP_SYS_ADMIN
+  network:
+    interfaces:
+      dnsdist1:
+        ip6: 2001:bc8:a:b:c:d:e:1/64
+        ip6route: fe80::1
+        ip4: 192.168.1.10
+        ip4route: 192.168.1.254
+        ovs:
+          enable: true
+          vlan: 3456
+      dnsdist2:
+        ip6: 2001:bc8:a:b:c:d:e:1/64
+        ip6route: fe80::1
+        ip4: 192.168.1.10
+        ip4route: 192.168.1.254
+        ovs:
+          enable: true
+          vlan: 3456
+  nix_service_file: /var/lib/nixunits/customs/dnsdist1.nix
+  properties:
+    hostname: my_wordpress.domain.org
+    themes: [ "twentytwentythree" ]
+```
+
 ```
 [root@aevoo-home:~]# nixunits build pg -cc "{ services.postgresql.enable = true; }" -6 -r
 Container : pg

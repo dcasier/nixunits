@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-. NIXUNITS/bin/common.sh
+. _NIXUNITS_PATH_SED_/bin/common.sh
 
 usage() {
   echo "Usage : nixunits action [options]"
@@ -32,9 +32,9 @@ shift
 
 case "$ACTION" in
   build)
-    NIXUNITS/bin/build.sh "$@";;
+    _NIXUNITS_PATH_SED_/bin/build.sh "$@";;
   delete)
-    NIXUNITS/bin/delete.sh "$@";;
+    _NIXUNITS_PATH_SED_/bin/delete.sh "$@";;
   ip6_get)
     ip6_crc32 "$1";;
   list)
@@ -45,7 +45,7 @@ case "$ACTION" in
     machinectl list
     ;;
   nsenter|shell)
-    NIXUNITS/bin/nsenter.sh "$@";;
+    _NIXUNITS_PATH_SED_/bin/nsenter.sh "$@";;
   restart|reboot)
     if shell_exist "$1"; then
       echo "ERROR: nsenter|shell exist"
@@ -55,7 +55,7 @@ case "$ACTION" in
   start)
     systemctl start "nixunits@$1";;
   status)
-    NIXUNITS/bin/status.sh "$@";;
+    _NIXUNITS_PATH_SED_/bin/status.sh "$@";;
   h|help)
     usage 0;;
   *)

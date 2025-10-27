@@ -1,40 +1,13 @@
 {
-  bind? "[]"
-, caps_allow ? "[]"
-, hostIp4 ? ""
-, hostIp6 ? ""
-, id
-, interface ? ""
-, ip4? ""
-, ip4route? ""
-, ip6? ""
-, ip6route? ""
-, netns_path? ""
+  id
 , nixpkgs? <nixpkgs>
-, properties ? "{}"
+, config
 }:
 
 let
   _modules = nixpkgs + "/nixos/modules";
   lib = pkgs.lib;
   pkgs = import nixpkgs {};
-
-  _bind = builtins.fromJSON(bind);
-  _caps_allow = builtins.fromJSON(caps_allow);
-  _properties = builtins.fromJSON(properties);
-
-  config = let
-    _file = global.fileNix id;
-    _ = lib.assertMgs (builtins.pathExists _file) "Service undefined";
-    _conf = import _file;
-  in
-    if builtins.isFunction _conf then
-      _conf {
-        inherit lib pkgs;
-        properties = _properties;
-      }
-    else
-      _conf;
 
   global = import ./global.nix {inherit lib pkgs;};
 
@@ -55,14 +28,7 @@ let
       };
     })
     {
-      ${global.moduleName}.${id} = {
-        inherit config;
-        network = {
-          inherit hostIp4 hostIp6 interface ip4 ip4route ip6 ip6route netns_path;
-        };
-        bind=_bind;
-        caps_allow=_caps_allow;
-      };
+      ${global.moduleName}.${id} = config;
     }
   ];
 

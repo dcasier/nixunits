@@ -15,11 +15,16 @@ pkgs.writeShellApplication {
       fi
     done
 
-    mkdir -p /var/lib/nixunits/containers /var/lib/nixunits/etc/systemd
+    mkdir -p /var/lib/nixunits/store/default/root /var/lib/nixunits/containers /var/lib/nixunits/etc/systemd
     cat >/var/lib/nixunits/etc/systemd/nixunits@.service <<EOF
+    [Install]
+    WantedBy=machines.target
+
     [Unit]
     Description=NixUnit container '%i'
     RequiresMountsFor=/var/lib/nixunits/containers/%i
+    Wants=network-online.target
+    After=network-online.target
 
     [Service]
     Environment=SYSTEMD_NSPAWN_UNIFIED_HIERARCHY=1

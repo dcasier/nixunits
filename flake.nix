@@ -11,9 +11,21 @@
   in {
     nixosModules.default = import ./module.nix;
 
+    lib = forAllSystems (pkgs: {
+      mkContainer = { configFile, propertiesJSON }:
+        let
+          properties = builtins.fromJSON(propertiesJSON);
+          config = import configFile { inherit pkgs properties; lib = pkgs.lib; };
+          id = properties.id;
+        in
+          pkgs.callPackage ./nix/default.nix {
+              inherit id config;
+          };
+    });
+
     packages = forAllSystems (pkgs: {
-      portable = import ./src/portable { nixpkgs = pkgs; };
-      nixunits = import ./src/nixunits.nix { inherit (pkgs) lib stdenv pkgs; };
+      portable = import ./nix/portable { nixpkgs = pkgs; };
+      nixunits = import ./nixunits.nix { inherit (pkgs) lib stdenv pkgs; };
     });
 
     devShells = forAllSystems (pkgs: {

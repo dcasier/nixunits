@@ -2,7 +2,7 @@
 set -e -o pipefail
 shopt -s expand_aliases
 
-. NIXUNITS/tests/json_status
+. _NIXUNITS_PATH_SED_/tests/json_status
 
 ID="8643a4f5-c137-44ef-953e-e8b4aca9f924"
 NETNS="8643a4f5"
@@ -43,7 +43,7 @@ _assert_equal() {
   fi
 }
 
-alias _nixunits=NIXUNITS/bin/nixunits
+alias _nixunits=_NIXUNITS_PATH_SED_/bin/nixunits
 _json() { _nixunits status $ID -d -o json; }
 _jq() { _json | jq -r ".$1"; }
 _json_without_addr() { _json | jq 'del(.addresses)'; }

@@ -9,18 +9,9 @@ let
 
   assertions = {cfg, name}: [
     {
-      assertion = cfg.network.hostIp4 == "" || cfg.network.ip4 != ""
-        -> cfg.network.hostIp6 == "" || cfg.network.ip6 != "";
-      message = ''IP missing with private veth enabled'';
-    }
-    {
-      assertion = cfg.network.interface == "" || !isNetPriv cfg;
-      message = ''Interface set with private veth enabled'';
-    }
-    {
       assertion = !strings.hasInfix "_" name;
       message = ''
-        Names containing underscores are not allowed. Please rename the container '${name}'
+        Names containing underscores are not allowed. Please rename container '${name}'
       '';
     }
   ];
@@ -73,7 +64,20 @@ let
     };
   };
 
-  _conf_unit = name: cfg: {
+  _conf_unit = name: cfg: let
+      extraFile =
+        if cfg.extra != ""
+        then pkgs.writeText "${name}-extra.sh" cfg.extra
+        else null;
+      nftFile =
+        if cfg.network ? nft && cfg.network.nft != ""
+        then pkgs.writeText "${name}-ruleset.nft" cfg.network.nft
+        else null;
+      sysctlFile =
+        if cfg ? sysctl && cfg.sysctl != ""
+        then pkgs.writeText "${name}-sysctl" cfg.sysctl
+        else null;
+  in {
     name = "${moduleName}/${name}.conf";
     value = {
       text = ''
@@ -84,18 +88,32 @@ let
             " --network-namespace-path=${cfg.network.netns_path}"
           + optionalString (isNetPriv cfg)
             " --private-network"
-          + optionalString (isNetVEth cfg)
+          + optionalString (vethEnabled cfg.network.interfaces)
             " --network-veth"
-          + optionalString (cfg.network.interface != "")
-            " --network-interface=${cfg.network.interface}"}"
-        HOST_IP4=${cfg.network.hostIp4}
-        HOST_IP6=${cfg.network.hostIp6}
-        IP4=${cfg.network.ip4}
+          + lib.concatStringsSep " " (
+            lib.mapAttrsToList
+              (name: _: " --network-interface=${name}")
+              cfg.network.interfaces
+          )
+        }   --overlay-ro=/var/lib/nixunits/store/default/root/nix/store/:/var/lib/nixunits/containers/${name}/root/nix/store:/nix/store"
+        ${lib.concatStringsSep "\n" (
+          lib.mapAttrsToList
+            (name: iface: ''
+              NIXUNITS__ETH__${name}__HOST_IP4=${iface.hostIp4}
+              NIXUNITS__ETH__${name}__HOST_IP6=${iface.hostIp6}
+              NIXUNITS__ETH__${name}__IP4=${iface.ip4}
+              NIXUNITS__ETH__${name}__IP6=${iface.ip6}
+              NIXUNITS__ETH__${name}__OVS_BRIDGE=${iface.ovs.bridge}
+              NIXUNITS__ETH__${name}__OVS_VLAN=${toString iface.ovs.vlan}
+            '')
+            cfg.network.interfaces
+        )}
         IP4ROUTE=${cfg.network.ip4route}
-        IP6=${cfg.network.ip6}
         IP6ROUTE=${cfg.network.ip6route}
-        INTERFACE=${cfg.network.interface}
         NAME=${name}
+        ${optionalString (extraFile != null) "EXTRA_FILE=${extraFile}"}
+        ${optionalString (nftFile != null) "NFT_FILE=${nftFile}"}
+        ${optionalString (sysctlFile != null) "SYSCTL_FILE=${sysctlFile}"}
         SYSTEM_PATH=${cfg.config.system.build.toplevel}
       '';
     };
@@ -105,9 +123,15 @@ let
     environment.etc = mapAttrs' _conf_unit cfg;
   };
 
-  isNetNS = cfg : cfg.network.netns_path != "";
-  isNetVEth = cfg: cfg.network.hostIp4 != "" || cfg.network.hostIp6 != "";
-  isNetPriv = cfg: !(isNetNS cfg) && ((cfg.network.ip4 == "" && cfg.network.ip6 == "") || (isNetVEth cfg));
+  vethEnabled = ifaces: builtins.length (
+    builtins.filter (iface: iface.hostIp4 != "" || iface.hostIp6 != "")
+      (builtins.attrValues ifaces)
+  ) > 1;
+
+  isNetPriv = cfg: !(cfg ? network);
+  isNetNS = cfg : cfg ? network && cfg.network ? netns_path && cfg.network.netns_path != "";
+  asInterface = cfg : cfg ? network && cfg.network ? interfaces && cfg.network.interfaces != {};
+  isNetVEth = cfg: cfg ? network &&  (cfg.network.hostIp4 != "" || cfg.network.hostIp6 != "");
 
   security = import ./security.nix {inherit lib;};
 
@@ -123,7 +147,6 @@ in with lib; {
           config = {
             nspawnArgs = (security.flags config.caps_allow) ++ [
               "--link-journal=host"
-              "--bind-ro=/nix/store"
             ] ++ (map (_bind: "--bind=${_bind}") config.bind);
             # path = config.config.system.build.toplevel;
           };
@@ -173,6 +196,11 @@ in with lib; {
               };
             };
 
+            extra  = mkOption {
+              default = "";
+              type = types.str;
+            };
+
             nspawnArgs = mkOption {
               default = [];
               description = ''
@@ -187,25 +215,43 @@ in with lib; {
               default = {};
               type = with types; submodule {
                 options = {
-                  hostIp4 = mkOption {
-                    default = "";
-                    type = str;
-                  };
-                  hostIp6 = mkOption {
-                    default = "";
-                    type = str;
-                  };
-                  interface = mkOption {
-                    default = "";
-                    type = str;
-                  };
-                  ip4 = mkOption {
-                    default = "";
-                    type = str;
-                  };
-                  ip6 = mkOption {
-                    default = "";
-                    type = str;
+                  interfaces = mkOption {
+                    default = {};
+                    type = attrsOf (submodule {
+                      options = {
+                        hostIp4 = mkOption {
+                          default = "";
+                          type = str;
+                        };
+                        hostIp6 = mkOption {
+                          default = "";
+                          type = str;
+                        };
+                        ip4 = mkOption {
+                          default = "";
+                          type = str;
+                        };
+                        ip6 = mkOption {
+                          default = "";
+                          type = str;
+                        };
+                        ovs = mkOption {
+                          default = {};
+                          type = submodule {
+                            options = {
+                              bridge = mkOption {
+                                default = "";
+                                type = str;
+                              };
+                              vlan = mkOption {
+                                default = 0;
+                                type = int;
+                              };
+                            };
+                          };
+                        };
+                      };
+                    });
                   };
                   ip4route = mkOption {
                     default = "";
@@ -216,6 +262,10 @@ in with lib; {
                     type = str;
                   };
                   netns_path = mkOption {
+                    default = "";
+                    type = str;
+                  };
+                  nft = mkOption {
                     default = "";
                     type = str;
                   };
@@ -238,6 +288,16 @@ in with lib; {
               type = types.path;
             };
 
+            nix_service_file = mkOption {
+              type = str;
+            };
+
+            properties = mkOption {
+              type = types.attrs;
+              default = {};
+              description = "";
+            };
+
             specialArgs = mkOption {
               default = {};
               description = ''
@@ -246,6 +306,10 @@ in with lib; {
                 the NixOS configurations.
               '';
               type = types.attrsOf types.unspecified;
+            };
+            sysctl = mkOption {
+              default = "";
+              type = types.str;
             };
           };
         }));

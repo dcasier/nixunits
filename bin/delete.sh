@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-. NIXUNITS/bin/common.sh
+. _NIXUNITS_PATH_SED_/bin/common.sh
 
 usage() {
   echo "Usage : nixunits delete <container id> [options]"
