@@ -125,11 +125,6 @@ let
   vethEnabled = hasVeth cfg.network.interfaces;
   nonVethIfaces = lib.filterAttrs (_: iface: !isVeth iface) cfg.network.interfaces;
 
-  vethEnabled = ifaces: builtins.length (
-    builtins.filter (iface: iface.hostIp4 != "" || iface.hostIp6 != "")
-      (builtins.attrValues ifaces)
-  ) >= 1;
-
   isNetPriv = cfg: !(cfg ? network);
   isNetNS = cfg : cfg ? network && cfg.network ? netns_path && cfg.network.netns_path != "";
 
