@@ -86,7 +86,7 @@ let
             (concatStringsSep " " cfg.nspawnArgs)
           + optionalString (isNetNS cfg) " --network-namespace-path=${cfg.network.netns_path}"
           + optionalString (isNetPriv cfg) " --private-network"
-          + optionalString vethEnabled " --network-veth"
+          + optionalString (vethEnabled cfg) " --network-veth"
           + lib.concatStringsSep " " (
             lib.mapAttrsToList
               (name: _: "--network-interface=${name}")
@@ -122,7 +122,7 @@ let
 
   hasVeth = interfaces: builtins.any isVeth (builtins.attrValues interfaces);
   isVeth = iface: iface.hostIp4 != "" || iface.hostIp6 != "";
-  vethEnabled = hasVeth cfg.network.interfaces;
+  vethEnabled = cfg: hasVeth cfg ? network && cfg.network ? interfaces && cfg.network.interfaces;
   nonVethIfaces = lib.filterAttrs (_: iface: !isVeth iface) cfg.network.interfaces;
 
   isNetPriv = cfg: !(cfg ? network);
