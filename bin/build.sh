@@ -70,9 +70,9 @@ MK_CONTAINER="(builtins.getFlake \"path:_NIXUNITS_PATH_SED_\").lib.x86_64-linux.
 properties='{\"id\": \"dummy\"}'
 
 if "$DEBUG";then
-  echo nix build "${ARGS[@]}" --store "$STORE_DEFAULT/merged" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
+  echo nix build "${ARGS[@]}" --store "$STORE_DEFAULT/root" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
 fi
-nix build "${ARGS[@]}" --store "$STORE_DEFAULT/merged" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
+nix build "${ARGS[@]}" --store "$STORE_DEFAULT/root" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
 
 cleanup() {
   umount "$CONTAINER_DIR/merged"
