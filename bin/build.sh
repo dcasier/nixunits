@@ -59,7 +59,7 @@ CONTAINER_DIR=$(unit_dir "$ID")
 
 START=false
 RESTART=false
-ARGS+=(--impure --no-link --store "$CONTAINER_DIR/merged")
+ARGS+=(--impure --no-link)
 
 mkdir -p "$CONTAINER_DIR/merged" "$CONTAINER_DIR/root/usr" "$CONTAINER_DIR/work"
 chmod 2750 "$CONTAINER_DIR"
@@ -70,9 +70,9 @@ MK_CONTAINER="(builtins.getFlake \"path:_NIXUNITS_PATH_SED_\").lib.x86_64-linux.
 properties='{\"id\": \"dummy\"}'
 
 if "$DEBUG";then
-  echo nix build "${ARGS[@]}" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
+  echo nix build "${ARGS[@]}" --store "$STORE_DEFAULT/merged" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
 fi
-nix build "${ARGS[@]}" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
+nix build "${ARGS[@]}" --store "$STORE_DEFAULT/merged" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
 
 cleanup() {
   umount "$CONTAINER_DIR/merged"
@@ -84,10 +84,10 @@ trap cleanup EXIT
 properties="builtins.readFile $PARAMETERS_FILE"
 
 if "$DEBUG";then
-  echo nix build --print-out-paths "${ARGS[@]}" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = $properties;})"
+  echo nix build --print-out-paths "${ARGS[@]}" --store "$CONTAINER_DIR/merged" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = $properties;})"
 fi
 
-RESULT_PATH=$(nix build --print-out-paths "${ARGS[@]}" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = $properties;})")
+RESULT_PATH=$(nix build --print-out-paths "${ARGS[@]}" --store "$CONTAINER_DIR/merged" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = $properties;})")
 
 _ln_src="${CONTAINER_DIR}/root$(readlink -f "${CONTAINER_DIR}/root${RESULT_PATH}/etc/nixunits/$ID.conf")"
 _ln_dst="$CONTAINER_DIR/unit.conf"
