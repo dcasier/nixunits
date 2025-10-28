@@ -4,7 +4,7 @@ set -euo pipefail
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
 usage() {
-  echo "Usage : nixunits build <container id> [options]"
+  echo "Usage : nixunits build [options]"
   echo "Available options:"
   echo "  -d  debug (show-trace)"
   echo "  -n  Nix config file"
@@ -47,6 +47,7 @@ while getopts "dn:j:hsr" opt; do
       usage 1;;
   esac
 done
+shift "$((OPTIND-1))"
 
 if [ $# -ne 0 ]; then
   echo "Invalid parameters '$1'." >&2
