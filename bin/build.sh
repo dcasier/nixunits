@@ -108,7 +108,7 @@ ln -fs "$_ln_src" "$_ln_dst"
 # TODO clea/rm WAL db store (sqlite)
 _unit="nixunits@$ID"
 STARTED=$(systemctl show "$_unit" --no-pager |grep ^SubState=running >/dev/null && echo true || echo false)
-if $START && ! $STARTED || $RESTART
+if [ "$START" = true ] &&  [ "$STARTED" != true ] || [ "$RESTART" = true ]
 then
   echo "systemctl restart $_unit"
   systemctl restart "$_unit"
