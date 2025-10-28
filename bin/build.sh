@@ -48,6 +48,11 @@ while getopts "dn:j:hsr" opt; do
   esac
 done
 
+if [ $# -ne 0 ]; then
+  echo "Invalid parameters '$1'." >&2
+  usage 1
+fi
+
 ID=$(_JQ_SED_ -r '.id' "$PARAMETERS_FILE")
 
 echo "Build container $ID"
@@ -61,7 +66,7 @@ START=false
 RESTART=false
 ARGS+=(--impure --no-link)
 
-mkdir -p "$CONTAINER_DIR/merged" "$CONTAINER_DIR/root/usr" "$CONTAINER_DIR/work"
+mkdir -p "$STORE_DEFAULT/root" "$CONTAINER_DIR/merged" "$CONTAINER_DIR/root/usr" "$CONTAINER_DIR/work"
 chmod 2750 "$CONTAINER_DIR"
 _unix_nix="$(unit_nix "$ID")"
 
