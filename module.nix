@@ -6,7 +6,7 @@ let
   autoStartFilter = cfg:
     filterAttrs(n: v: v.autoStart) cfg;
 
-  global = import ./global.nix {inherit lib pkgs;};
+  global = import ./nix/global.nix {inherit lib pkgs;};
   moduleName = global.moduleName;
 
   nixunits = pkgs.callPackage ./nixunits.nix {
