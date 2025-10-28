@@ -6,7 +6,26 @@ set -e
 ID="$1"
 shift
 
-_args=$(shell_args "$ID")
+NET=false
+
+while getopts "nh" opt; do
+  case $opt in
+    n)
+      NET=true;;
+    h)
+      usage;;
+    \?)
+      echo "Invalid option : -$OPTARG" >&2
+      usage 1;;
+  esac
+done
+
+if [ "${NET:-false}" = true ]
+then
+  _args=$(shell_netns "$ID")
+else
+  _args=$(shell_args "$ID")
+fi
 
 if test -z "$*"
 then

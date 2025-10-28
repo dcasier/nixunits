@@ -67,6 +67,10 @@ shell_exist() {
   pgrep -f "nsenter $(shell_args "$1")" >/dev/null
 }
 
+shell_netns() {
+  echo --target "$(pid_leader "$1")" --net;
+}
+
 _ip6_crc32() {
   _crc32=$(echo -n "$1" | gzip -c | tail -c8 | head -c4 | hexdump -e '"%01x"')
   echo "fc00::${_crc32:0:4}:${_crc32:4:8}"
