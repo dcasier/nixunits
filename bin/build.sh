@@ -24,6 +24,8 @@ test -z "$1" && usage 1
 test "$1" = "-h" && usage 0
 test "$1" = "--help" && usage 0
 
+START=false
+RESTART=false
 DEBUG=false
 ARGS=()
 while getopts "dn:j:hsr" opt; do
@@ -63,8 +65,6 @@ in_nixos_failed "$ID"
 STORE_DEFAULT="/var/lib/nixunits/store/default"
 CONTAINER_DIR=$(unit_dir "$ID")
 
-START=false
-RESTART=false
 ARGS+=(--impure --no-link)
 
 mkdir -p "$STORE_DEFAULT/root" "$CONTAINER_DIR/merged" "$CONTAINER_DIR/root/usr" "$CONTAINER_DIR/work"
