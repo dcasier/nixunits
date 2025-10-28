@@ -46,7 +46,7 @@ while getopts "dn:j:hsr" opt; do
   esac
 done
 
-ID=$(jq -r '.id' "$PARAMETERS_FILE")
+ID=$(_JQ_SED_ -r '.id' "$PARAMETERS_FILE")
 
 in_nixos_failed "$ID"
 

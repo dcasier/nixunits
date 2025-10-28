@@ -59,13 +59,13 @@ STATUS=$(test -f "$(unit_conf "$id")" && echo "created" || echo "initial")
 
 if [ "$DETAILS" == "true" ]
 then
-  STARTED_INFO=$(machinectl -o json | jq ".[] | select(.machine == \"$id\")")
+  STARTED_INFO=$(machinectl -o json | _JQ_SED_ ".[] | select(.machine == \"$id\")")
   if [ "$STARTED_INFO" != "" ]
   then
     STATUS="started"
-    OS=$(echo "$STARTED_INFO" | jq -r .os)
-    VERSION=$(echo "$STARTED_INFO" | jq -r .version)
-    ADDRESSES=$(echo "$STARTED_INFO" | jq -r .addresses)
+    OS=$(echo "$STARTED_INFO" | _JQ_SED_ -r .os)
+    VERSION=$(echo "$STARTED_INFO" | _JQ_SED_ -r .version)
+    ADDRESSES=$(echo "$STARTED_INFO" | _JQ_SED_ -r .addresses)
   fi
 else
   sub_state=$(machinectl show "$id" |grep ^State | cut -d'=' -f2)

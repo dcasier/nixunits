@@ -27,6 +27,7 @@ stdenv.mkDerivation rec {
       s|_NIXUNITS_PATH_SED_|$out|
       s|_OPENVSWITCH_PATH_SED_|${pkgs.openvswitch}|
       s|_NFT_BIN_SED_|${pkgs.nftables}/bin/nft|
+      s|_JQ_SED_|${pkgs.jq}/bin/jq|
     " $out/unit/*
   '';
 
