@@ -24,10 +24,12 @@ test -z "$1" && usage 1
 test "$1" = "-h" && usage 0
 test "$1" = "--help" && usage 0
 
+DEBUG=false
 ARGS=()
 while getopts "dn:j:hsr" opt; do
   case $opt in
     d)
+      DEBUG=true
       ARGS=("--show-trace")
       ;;
     r)
@@ -65,6 +67,9 @@ MK_CONTAINER="(builtins.getFlake \"path:_NIXUNITS_PATH_SED_\").lib.x86_64-linux.
 
 properties='{\"id\": \"dummy\"}'
 
+if [ -n "$DEBUG" ];then
+  echo nix build "${ARGS[@]}" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
+fi
 nix build "${ARGS[@]}" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
 
 cleanup() {
@@ -75,6 +80,11 @@ mount -t overlay overlay -o "lowerdir=${STORE_DEFAULT}/root,upperdir=$CONTAINER_
 trap cleanup EXIT
 
 properties="builtins.readFile $PARAMETERS_FILE"
+
+if [ -n "$DEBUG" ];then
+  echo nix build --print-out-paths "${ARGS[@]}" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = $properties;})"
+fi
+
 RESULT_PATH=$(nix build --print-out-paths "${ARGS[@]}" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = $properties;})")
 
 _ln_src="${CONTAINER_DIR}/root$(readlink -f "${CONTAINER_DIR}/root${RESULT_PATH}/etc/nixunits/$ID.conf")"
