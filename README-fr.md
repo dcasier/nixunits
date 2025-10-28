@@ -127,7 +127,7 @@ in {
 Build + start :
 
 ```bash
-nixunits build web2 -n ./web_default.nix -j ./web2.json -s
+nixunits build -n ./web_default.nix -j ./web2.json -s
 ```
 
 Inspection :
