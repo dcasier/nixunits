@@ -86,8 +86,7 @@ trap cleanup EXIT
 
 properties="builtins.readFile $PARAMETERS_FILE"
 
-cmd=(nix build --print-out-paths "${ARGS[@]}" \
-     --store "$CONTAINER_DIR/merged" \
+cmd=(nix build --print-out-paths "${ARGS[@]}" --store "$CONTAINER_DIR/merged" \
      --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = $properties;})")
 
 if [ "${DEBUG:-false}" = true ]; then
