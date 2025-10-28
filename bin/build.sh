@@ -24,12 +24,12 @@ test -z "$1" && usage 1
 test "$1" = "-h" && usage 0
 test "$1" = "--help" && usage 0
 
-DEBUG=false
+DEBUG=0
 ARGS=()
 while getopts "dn:j:hsr" opt; do
   case $opt in
     d)
-      DEBUG=true
+      DEBUG=1
       ARGS=("--show-trace")
       ;;
     r)
@@ -50,6 +50,8 @@ done
 
 ID=$(_JQ_SED_ -r '.id' "$PARAMETERS_FILE")
 
+echo "Build container $ID"
+
 in_nixos_failed "$ID"
 
 STORE_DEFAULT="/var/lib/nixunits/store/default"
@@ -67,7 +69,7 @@ MK_CONTAINER="(builtins.getFlake \"path:_NIXUNITS_PATH_SED_\").lib.x86_64-linux.
 
 properties='{\"id\": \"dummy\"}'
 
-if [ -n "$DEBUG" ];then
+if "$DEBUG";then
   echo nix build "${ARGS[@]}" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
 fi
 nix build "${ARGS[@]}" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$properties\";})"
@@ -81,7 +83,7 @@ trap cleanup EXIT
 
 properties="builtins.readFile $PARAMETERS_FILE"
 
-if [ -n "$DEBUG" ];then
+if "$DEBUG";then
   echo nix build --print-out-paths "${ARGS[@]}" --expr "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = $properties;})"
 fi
 
