@@ -55,7 +55,7 @@ ip6_crc32_host() { echo "$(_ip6_crc32 "$1"):1"; }
 log() { echo "$(unit_dir "$1")/unit.log"; }
 
 pid_leader() {
-  machinectl show "$1" --no-pager |grep Leader |cut -d'=' -f2
+  machinectl show "$1" --no-pager |grep ^Leader= |cut -d'=' -f2
 }
 
 # shellcheck disable=SC2046
