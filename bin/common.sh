@@ -54,6 +54,16 @@ ip6_crc32_host() { echo "$(_ip6_crc32 "$1"):1"; }
 
 log() { echo "$(unit_dir "$1")/unit.log"; }
 
+log_msg() {
+  echo "$1" >&2
+}
+
+log_block_msg() {
+  log_msg "########################################"
+  log_msg "# $1"
+  log_msg "########################################"
+}
+
 pid_in_ns_not_in_container() {
   PID_SYSTEMD=$1
   ALL=$(pid_with_same_ns_find "$PID_SYSTEMD" pid)

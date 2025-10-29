@@ -7,16 +7,6 @@ trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 
 NFT=_NFT_BIN_SED_
 
-log_msg() {
-  echo "$1" >&2
-}
-
-log_block_msg() {
-  log_msg "########################################"
-  log_msg "# $1"
-  log_msg "########################################"
-}
-
 host_exec() {
   log_msg "[    Host   ] exec $1"
   /bin/sh -c "$1"

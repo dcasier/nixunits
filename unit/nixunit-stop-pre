@@ -3,16 +3,17 @@ set -eo pipefail
 
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
-###############################################################################
-# Main
-###############################################################################
+log_block_msg "### nixunits STOP PRE"
+
 
 NS_PID=$(host_exec "ps --ppid $MAINPID -o pid h")
 
 UNWANTED=$(pid_in_ns_not_in_container "$NS_PID")
 
+log_msg "PID UNWANTED : $UNWANTED"
+
 for p in $UNWANTED; do
-  echo "Kill pid $p" >&2
+  log_msg "Kill pid $p"
   [ -d "/proc/$p" ] && kill "$p" 2>/dev/null
 done
 sleep 1
@@ -21,6 +22,8 @@ UNWANTED=$(for p in $UNWANTED; do [ -d "/proc/$p" ] && echo "$p"; done)
 
 UNWANTED=$(pid_in_ns_not_in_container "$NS_PID")
 for p in $UNWANTED; do
-  echo "Kill -9 pid $p" >&2
+  log_msg "Kill -9 pid $p"
   [ -d "/proc/$p" ] && kill -9 "$p" 2>/dev/null
 done
+
+log_block_msg "### nixunits STOP PRE"

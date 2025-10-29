@@ -7,16 +7,6 @@ trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 
 export PATH=$PATH:_OPENVSWITCH_PATH_SED_/bin
 
-log_msg() {
-  echo "$1" >&2
-}
-
-log_block_msg() {
-  log_msg "########################################"
-  log_msg "# $1"
-  log_msg "########################################"
-}
-
 interface_ovs_create() {
   log_msg "Create OVS interface - $INTERFACE - "
   if ! interface_exists "$INTERFACE"; then
