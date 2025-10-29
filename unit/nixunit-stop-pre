@@ -5,7 +5,6 @@ set -eo pipefail
 
 log_block_msg "### nixunits STOP PRE"
 
-
 NS_PID=$(host_exec "ps --ppid $MAINPID -o pid h")
 
 UNWANTED=$(pid_in_ns_not_in_container "$NS_PID")

@@ -7,11 +7,6 @@ trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 
 NFT=_NFT_BIN_SED_
 
-host_exec() {
-  log_msg "[    Host   ] exec $1"
-  /bin/sh -c "$1"
-}
-
 container_exec() {
   log_msg "[ Container ] exec $1"
   nsenter --target "$NS_PID" --mount --uts --ipc --net --pid -- /bin/sh -c "$1"

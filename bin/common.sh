@@ -6,6 +6,11 @@ unit_conf() { echo "$(unit_dir "$1")/unit.conf"; }
 unit_nix() { echo "$(unit_dir "$1")/unit.nix"; }
 unit_root() { echo "$(unit_dir "$1")/root/"; }
 
+host_exec() {
+  log_msg "[    Host   ] exec $1"
+  /bin/sh -c "$1"
+}
+
 INTERFACE_FIELDS=(
   HOST_IP4
   HOST_IP6
