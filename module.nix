@@ -21,6 +21,7 @@ let
     ExecStart="systemd-nspawn --machine=%i -D ${global.pathRoot "%i"} --notify-ready=yes --kill-signal=SIGRTMIN+3 $NSPAWN_ARGS \${SYSTEM_PATH}/init";
     ExecStartPre="${nixunits}/unit/nixunit-start-pre";
     ExecStartPost="${nixunits}/unit/nixunit-start-post";
+    ExecStopPre="${nixunits}/unit/nixunit-stop-pre";
     EnvironmentFile = "${global.unitConf "%i"}";
     KillMode = "mixed";
     Restart = "on-failure";

@@ -1,0 +1,26 @@
+#!/bin/bash
+set -eo pipefail
+
+. _NIXUNITS_PATH_SED_/bin/common.sh
+
+###############################################################################
+# Main
+###############################################################################
+
+NS_PID=$(host_exec "ps --ppid $MAINPID -o pid h")
+
+UNWANTED=$(pid_in_ns_not_in_container "$NS_PID")
+
+for p in $UNWANTED; do
+  echo "Kill pid $p" >&2
+  [ -d "/proc/$p" ] && kill "$p" 2>/dev/null
+done
+sleep 1
+UNWANTED=$(for p in $UNWANTED; do [ -d "/proc/$p" ] && echo "$p"; done)
+[ -z "$UNWANTED" ] || sleep 6
+
+UNWANTED=$(pid_in_ns_not_in_container "$NS_PID")
+for p in $UNWANTED; do
+  echo "Kill -9 pid $p" >&2
+  [ -d "/proc/$p" ] && kill -9 "$p" 2>/dev/null
+done

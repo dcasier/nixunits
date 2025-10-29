@@ -54,6 +54,24 @@ ip6_crc32_host() { echo "$(_ip6_crc32 "$1"):1"; }
 
 log() { echo "$(unit_dir "$1")/unit.log"; }
 
+pid_in_ns_not_in_container() {
+  PID_SYSTEMD=$1
+  ALL=$(pid_with_same_ns_find "$PID_SYSTEMD" pid)
+  TREE=$(pstree -Tp "$PID_SYSTEMD" | grep -o '([0-9]\+)' | tr -d '()')
+
+  comm -13 \
+    <(printf "%s\n" "$TREE" | sort -n) \
+    <(printf "%s\n" "$ALL" | sort -n)
+}
+
+pid_with_same_ns_find() {
+  PID=$1
+  TYPE=$2
+  find /proc -maxdepth 3 -type l -path "/proc/*/ns/$TYPE" \
+    -lname "$TYPE:\[$(lsns -p "$PID" -t "$TYPE" -n \
+    |awk '{print $1}')\]" |cut -d'/' -f3
+}
+
 pid_leader() {
   machinectl show "$1" --no-pager |grep ^Leader= |cut -d'=' -f2
 }

@@ -30,10 +30,10 @@ pkgs.writeShellApplication {
     Environment=SYSTEMD_NSPAWN_UNIFIED_HIERARCHY=1
     EnvironmentFile=/var/lib/nixunits/containers/%i/unit.conf
 
-    ExecStartPre=${nixunits}/unit/nixunit-start-pre %i
+    ExecStartPre=${nixunits}/unit/nixunit-start-pre
     ExecStart=/usr/bin/systemd-nspawn --machine=%i -D /var/lib/nixunits/containers/%i/root --notify-ready=yes --kill-signal=SIGRTMIN+3 \$NSPAWN_ARGS \''\${SYSTEM_PATH}/init
-    ExecStartPost=${nixunits}/unit/nixunit-start-post %i
-
+    ExecStartPost=${nixunits}/unit/nixunit-start-post
+    ExecStopPre=${nixunits}/unit/nixunit-stop-pre
     ExecStop=/usr/bin/machinectl terminate %i
     ExecStopPost=/usr/bin/machinectl wait %i || true
 
