@@ -75,7 +75,8 @@ log_block_msg() {
 pid_in_ns_not_in_container() {
   PID_SYSTEMD=$1
   ALL=$(pid_with_same_ns_find "$PID_SYSTEMD" pid)
-  TREE=$(pstree -Tp "$PID_SYSTEMD" | grep -o '([0-9]\+)' | tr -d '()')
+  # TREE=$(pstree -Tp "$PID_SYSTEMD" | grep -o '([0-9]\+)' | tr -d '()')
+  TREE=$(pstree "$PID_SYSTEMD" | grep -o ' [0-9]\+ ' )
 
   comm -13 \
     <(printf "%s\n" "$TREE" | sort -n) \
