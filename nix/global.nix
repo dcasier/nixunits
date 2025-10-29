@@ -98,7 +98,7 @@ let
           + optionalString (vethEnabled) " --network-veth"
           + lib.concatStringsSep " " (
             lib.mapAttrsToList
-              (name: _: "--network-interface=${name}")
+              (name: _: " --network-interface=${name}")
               nonVethIfaces
           )
         }   --overlay-ro=/var/lib/nixunits/store/default/root/nix/store/:/var/lib/nixunits/containers/${name}/root/nix/store:/nix/store"
