@@ -1,5 +1,8 @@
 _VAR="/var/lib/nixunits/containers"
 
+PATH="$PATH:__AWK_BIN_SED__:__FIND_BIN_SED__:__GREP_BIN_SED__:__PSTREE_BIN_SED__"
+export PATH
+
 unit_dir() { echo "$_VAR/$1"; }
 
 unit_conf() { echo "$(unit_dir "$1")/unit.conf"; }
