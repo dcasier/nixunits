@@ -9,8 +9,6 @@ NS_PID=$(host_exec "ps --ppid $MAINPID -o pid h")
 
 UNWANTED=$(pid_in_ns_not_in_container "$NS_PID")
 
-log_msg "PID UNWANTED : $UNWANTED"
-
 for p in $UNWANTED; do
   log_msg "Kill pid $p"
   [ -d "/proc/$p" ] && kill "$p" 2>/dev/null

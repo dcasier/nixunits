@@ -1,6 +1,6 @@
 _VAR="/var/lib/nixunits/containers"
 
-PATH="$PATH:__AWK_BIN_SED__:__FIND_BIN_SED__:__GREP_BIN_SED__:__PSTREE_BIN_SED__"
+PATH="__AWK_BIN_SED__:__FIND_BIN_SED__:__GREP_BIN_SED__:__PSTREE_BIN_SED__:$PATH"
 export PATH
 
 unit_dir() { echo "$_VAR/$1"; }
@@ -78,9 +78,10 @@ pid_in_ns_not_in_container() {
   # TREE=$(pstree -Tp "$PID_SYSTEMD" | grep -o '([0-9]\+)' | tr -d '()')
   TREE=$(pstree "$PID_SYSTEMD" | grep -o ' [0-9]\+ ' )
 
+  # shellcheck disable=SC2086
   comm -13 \
-    <(printf "%s\n" "$TREE" | sort -n) \
-    <(printf "%s\n" "$ALL" | sort -n)
+    <(printf "%s\n" $TREE | sort -n) \
+    <(printf "%s\n" $ALL | sort -n)
 }
 
 pid_with_same_ns_find() {
