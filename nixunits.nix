@@ -20,9 +20,9 @@ stdenv.mkDerivation rec {
     sed -i "
       s|evalConfig=.*|evalConfig=$share/eval-config.nix|
       s|_NIXUNITS_PATH_SED_|$out|
-      s|__AWK_BIN_SED__|${pkgs.awk}/bin|
-      s|__FIND_BIN_SED__|${pkgs.find}/bin|
-      s|__GREP_BIN_SED__|${pkgs.grep}/bin|
+      s|__AWK_BIN_SED__|${pkgs.gawk}/bin|
+      s|__FIND_BIN_SED__|${pkgs.findutils}/bin|
+      s|__GREP_BIN_SED__|${pkgs.gnugrep}/bin|
       s|__PSTREE_BIN_SED__|${pkgs.pstree}/bin|
       s|_JQ_SED_|${pkgs.jq}/bin/jq|
     " $out/bin/*
