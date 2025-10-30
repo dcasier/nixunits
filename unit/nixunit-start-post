@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eo pipefail
+set -xeo pipefail
 trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 
 # shellcheck disable=SC1091
@@ -13,7 +13,7 @@ container_exec() {
 }
 
 container_host_exec() {
-  log_msg "[ Container ] exec $1"
+  log_msg "[ Container ] netns exec $1"
   nsenter --target "$NS_PID" --uts --ipc --net --pid -- /bin/sh -c "$1"
 }
 
@@ -87,16 +87,26 @@ context_set() {
 # Main
 ###############################################################################
 
-NS_PID=$(host_exec "ps --ppid $MAINPID -o pid h")
+_ROOT_=/var/lib/nixunits/containers/$NAME/root
 
-log_block_msg "### nixunits START POST"
+log_block_msg "### nixunits START"
+
+inotifywait -e create "/run/systemd/machines" |
+while read -r _ _ file; do
+    echo $file >&2
+    if [ "$file" = "$NAME" ]; then
+        break
+    fi
+done
+
+NS_PID=$(pid_leader "$NAME")
 
 if [ -n "$NFT_FILE" ]; then
-  container_host_exec "$NFT -f /var/lib/nixunits/containers/${NAME}/root$NFT_FILE"
+  container_host_exec "$NFT -f ${_ROOT_}$NFT_FILE"
 fi
 
 if [ -n "$SYSCTL_FILE" ]; then
-  container_host_exec "sysctl -p /var/lib/nixunits/containers/${NAME}/root$SYSCTL_FILE"
+  container_host_exec "sysctl -p ${_ROOT_}$SYSCTL_FILE"
 fi
 
 if [ -z "$(interfaces_list)" ]
@@ -120,7 +130,8 @@ if [ -n "$IP6ROUTE" ]; then
 fi
 
 if [ -n "$EXTRA_FILE" ];then
-  container_exec "$(cat "/var/lib/nixunits/containers/${NAME}/root$EXTRA_FILE")"
+  container_exec "$(cat "${_ROOT_}$EXTRA_FILE")"
 fi
 
-log_msg "### nixunits END POST ###"
+log_msg "### nixunits START OK ###"
+

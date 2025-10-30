@@ -1,6 +1,6 @@
 _VAR="/var/lib/nixunits/containers"
 
-PATH="__AWK_BIN_SED__:__FIND_BIN_SED__:__GREP_BIN_SED__:__PSTREE_BIN_SED__:$PATH"
+PATH="__AWK_BIN_SED__:__FIND_BIN_SED__:__GREP_BIN_SED__:__INOTIFY_BIN_SED__:__PSTREE_BIN_SED__:__SYSTEMD_BIN_SED__:$PATH"
 export PATH
 
 unit_dir() { echo "$_VAR/$1"; }
@@ -93,7 +93,8 @@ pid_with_same_ns_find() {
 }
 
 pid_leader() {
-  machinectl show "$1" --no-pager |grep ^Leader= |cut -d'=' -f2
+  # machinectl show "$1" --no-pager |grep ^Leader= |cut -d'=' -f2
+  machinectl show "$1" -p Leader --value
 }
 
 # shellcheck disable=SC2046

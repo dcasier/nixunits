@@ -23,7 +23,9 @@ stdenv.mkDerivation rec {
       s|__AWK_BIN_SED__|${pkgs.gawk}/bin|
       s|__FIND_BIN_SED__|${pkgs.findutils}/bin|
       s|__GREP_BIN_SED__|${pkgs.gnugrep}/bin|
+      s|__INOTIFY_BIN_SED__|${pkgs.inotify-tools}/bin|
       s|__PSTREE_BIN_SED__|${pkgs.pstree}/bin|
+      s|__SYSTEMD_BIN_SED__|${pkgs.systemd}/bin|
       s|_JQ_SED_|${pkgs.jq}/bin/jq|
     " $out/bin/*
 

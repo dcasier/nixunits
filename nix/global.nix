@@ -1,4 +1,4 @@
-{lib, pkgs}: with lib;
+{lib, pkgs, ...}: with lib;
 let
   moduleName = "nixunits";
   unitConf = name: "${pathContainers}/${name}/unit.conf";
@@ -44,6 +44,24 @@ let
       stateVersion = lib.mkDefault config.system.nixos.release;
     };
     systemd = {
+      paths."wait-net-ready" = {
+        description = "Wait host signal";
+        pathConfig = {
+          PathExistsGlob = "/run/net-ready";
+        };
+        wantedBy = [ "multi-user.target" ];
+      };
+
+      services."wait-net-ready" = {
+        description = "Wait network ready";
+        before = [ "network-pre.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = ''/run/current-system/sw/bin/echo "### Network ready"'';
+        };
+        wantedBy = [ "network-pre.target" ];
+      };
+
       coredump.enable = false;
       oomd.enable = false;
       package = pkgs.systemdMinimal;
@@ -101,7 +119,7 @@ let
               (name: _: " --network-interface=${name}")
               nonVethIfaces
           )
-        }   --overlay-ro=/var/lib/nixunits/store/default/root/nix/store/:/var/lib/nixunits/containers/${name}/root/nix/store:/nix/store"
+        } --overlay-ro=/var/lib/nixunits/store/default/root/nix/store/:/var/lib/nixunits/containers/${name}/root/nix/store:/nix/store"
         ${lib.concatStringsSep "\n" (
           lib.mapAttrsToList
             (name: iface: ''

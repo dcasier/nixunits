@@ -31,8 +31,7 @@ pkgs.writeShellApplication {
     EnvironmentFile=/var/lib/nixunits/containers/%i/unit.conf
 
     ExecStartPre=${nixunits}/unit/nixunit-start-pre
-    ExecStart=/usr/bin/systemd-nspawn --machine=%i -D /var/lib/nixunits/containers/%i/root --notify-ready=yes --kill-signal=SIGRTMIN+3 \$NSPAWN_ARGS \''\${SYSTEM_PATH}/init
-    ExecStartPost=${nixunits}/unit/nixunit-start-post
+    ExecStart=${nixunits}/unit/nixunit-start
     ExecStop=${nixunits}/unit/nixunit-stop-pre
     ExecStop=/usr/bin/machinectl terminate %i
     ExecStopPost=/usr/bin/machinectl wait %i || true

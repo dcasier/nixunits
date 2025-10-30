@@ -29,9 +29,6 @@ fi
 
 if test -z "$*"
 then
-  echo >&2 "                     - - - WARNING - - -"
-  echo >&2 " - - - Remember to exit shell before stopping container - - - "
-  echo >&2 "                     - - - WARNING - - - "
   # shellcheck disable=SC2086
   nsenter $_args
 else
