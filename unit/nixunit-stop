@@ -3,7 +3,7 @@ set -eo pipefail
 
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
-log_block_msg "### nixunits STOP PRE"
+log_block_msg "### nixunits STOP"
 
 NS_PID=$(host_exec "ps --ppid $MAINPID -o pid h")
 
@@ -23,4 +23,10 @@ for p in $UNWANTED; do
   [ -d "/proc/$p" ] && kill -9 "$p" 2>/dev/null
 done
 
-log_block_msg "### nixunits STOP PRE"
+machinectl terminate "$NAME"
+
+while machinectl status "$NAME" >/dev/null 2>&1; do
+  sleep 1
+done
+
+log_block_msg "### nixunits STOP END"

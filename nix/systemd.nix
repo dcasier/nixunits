@@ -36,27 +36,26 @@ let
     unitConfig.RequiresMountsFor = "${global.pathContainers}/%i";
     path = [ pkgs.iproute2 ];
     restartIfChanged = false;
+    after = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
     inherit serviceConfig;
   };
 in
 
 {
-    paths."${moduleName}-network@" = {
-      description = "Watch for machine %i readiness";
-      pathConfig = {
-        PathExists = "/run/systemd/machines/%i";
-      };
-    };
-    services = listToAttrs (filter (x: x.value != null) (
-      [{
+    services = listToAttrs (filter (x: x.value != null) ([
+      {
         name = "${moduleName}-network@";
         value = {
+          after = [ "machine-%i.scope" "network-online.target" ];
+          bindsTo = [ "machine-%i.scope" ];
           description = "Configure network for machine %i";
           serviceConfig = {
             EnvironmentFile = "${global.unitConf "%i"}";
             ExecStart = "${nixunits}/unit/nixunit-network-config";
             Type = "oneshot";
           };
+          wantedBy = [ "machine-%i.scope" ];
         };
       }
       {

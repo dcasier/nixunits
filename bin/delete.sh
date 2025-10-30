@@ -16,13 +16,13 @@ usage() {
   exit 0
 }
 
-id=$1
+ID=$1
 
-if [ "$id" = "-h" ] || [ "$id" = "--help" ]; then
+if [ "$ID" = "-h" ] || [ "$ID" = "--help" ]; then
   usage
 fi
 
-test -z "$id" && usage 1
+test -z "$ID" && usage 1
 shift
 
 FORCE=false
@@ -45,13 +45,13 @@ while getopts "fghr" opt; do
   esac
 done
 
-[ -z "$id" ] && echo "Container id missed" && exit 1
+[ -z "$ID" ] && echo "Container id missed" && exit 1
 
-CONTAINER_DIR=$(unit_dir "$id")
+CONTAINER_DIR=$(unit_dir "$ID")
 
 if ! $FORCE
 then
-  in_nixos_failed "$id"
+  in_nixos_failed "$ID"
   read -rn 1 -p "Delete $CONTAINER_DIR ? [y/N] : " AGREE
   if ! expr "$AGREE" : '[yY]' >/dev/null
   then
@@ -60,7 +60,22 @@ then
 fi
 
 echo
-systemctl stop "nixunits@$id"
+_unit="nixunits@$ID.service"
+_unit_net="nixunits-network@$ID.service"
+
+if grep -q '^ID=nixos' /etc/os-release; then
+  SYSTEMD_PATH="/run/systemd/system"
+else
+  SYSTEMD_PATH="/etc/systemd/system"
+fi
+
+test -f "${SYSTEMD_PATH}/$_unit_net" && rm "${SYSTEMD_PATH}/$_unit_net" || true
+test -f "${SYSTEMD_PATH}/$_unit" && rm "${SYSTEMD_PATH}/$_unit" || true
+test -f "${SYSTEMD_PATH}/machine-${ID}.scope.wants/$_unit_net" && rm "${SYSTEMD_PATH}/machine-${ID}.scope.wants/$_unit_net" || true
+test -f "${SYSTEMD_PATH}/multi-user.target.wants/$_unit_net" && rm "${SYSTEMD_PATH}/multi-user.target.wants/$_unit_net" || true
+test -d "${SYSTEMD_PATH}/machine-${ID}.scope.wants" && rmdir "${SYSTEMD_PATH}/machine-${ID}.scope.wants" || true
+
+systemctl stop "$_unit"
 
 if $RECURSIVE
 then
@@ -73,7 +88,7 @@ else
     rm "$file"
   done
   if [ "$(find "$CONTAINER_DIR" |wc -l)" = 2 ];then
-    rmdir "$(unit_root "$id")"
+    rmdir "$(unit_root "$ID")"
     rmdir "$CONTAINER_DIR"
   fi
 fi

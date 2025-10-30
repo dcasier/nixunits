@@ -44,27 +44,36 @@ let
       stateVersion = lib.mkDefault config.system.nixos.release;
     };
     systemd = {
-      paths."wait-net-ready" = {
-        description = "Wait host signal";
-        pathConfig = {
-          PathExistsGlob = "/run/net-ready";
-        };
-        wantedBy = [ "multi-user.target" ];
-      };
-
-      services."wait-net-ready" = {
-        description = "Wait network ready";
-        before = [ "network-pre.target" ];
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = ''/run/current-system/sw/bin/echo "### Network ready"'';
-        };
-        wantedBy = [ "network-pre.target" ];
-      };
-
       coredump.enable = false;
       oomd.enable = false;
       package = pkgs.systemdMinimal;
+#      paths."wait-net-ready" = {
+#        after = [ "network-pre.target" ];
+#        description = "Wait host signal";
+#        pathConfig = {
+#          PathExists = "/run/net-ready";
+#        };
+#        wantedBy = [ "network-pre.target" ];
+#      };
+      services."wait-net-ready" = {
+        before = [ "network-pre.target" ];
+        wantedBy = [ "network-pre.target" ];
+        description = "Wait network ready";
+        serviceConfig = let
+          waitNetReady = pkgs.writeShellScript "wait-net-ready.sh" ''
+            set -eu
+            # while filepath=$(${pkgs.inotify-tools}/bin/inotifywait -e create --format '%w%f' /run); do
+            while ! [ -f "/run/net-ready" ];do
+                sleep 0.1
+            done
+            echo "### Network ready"
+            rm -f /run/net-ready
+          '';
+        in {
+          ExecStart = "${waitNetReady}";
+          Type = "oneshot";
+        };
+      };
       suppressedSystemUnits = [
         "console-getty.service"
         "dbus-org.freedesktop.login1.service"
@@ -79,6 +88,7 @@ let
         "suid-sgid-wrappers.service"
         "systemd-user-sessions.service"
       ];
+      targets.multi-user.requires = [ "basic.target" "wait-net-ready.service" ];
     };
   };
 

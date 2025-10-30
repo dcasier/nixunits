@@ -7,6 +7,7 @@ usage() {
   echo "Usage : nixunits build [options]"
   echo "Available options:"
   echo "  -d  debug (show-trace)"
+  echo "  -e  enable service"
   echo "  -n  Nix config file"
   echo "  -j  JSON parameters file"
   echo "  -h  help"
@@ -22,16 +23,19 @@ test -z "$1" && usage 1
 test "$1" = "-h" && usage 0
 test "$1" = "--help" && usage 0
 
+ENABLE=false
 START=false
 RESTART=false
 DEBUG=false
 ARGS=()
-while getopts "dn:j:hsr" opt; do
+while getopts "den:j:hsr" opt; do
   case $opt in
     d)
       DEBUG=true
       ARGS=("--show-trace")
       ;;
+    e)
+      ENABLE=true;;
     r)
       RESTART=true;;
     s)
@@ -109,12 +113,29 @@ _ln_src="${CONTAINER_DIR}/root$(readlink -f "${CONTAINER_DIR}/root${RESULT_PATH}
 _ln_dst="$CONTAINER_DIR/unit.conf"
 ln -fs "$_ln_src" "$_ln_dst"
 
-# TODO clea/rm WAL db store (sqlite)
-_unit="nixunits@$ID"
+_unit="nixunits@${ID}.service"
+_unit_net="nixunits-network@${ID}.service"
+
+if [ "$ENABLE" = true ];then
+  set -x
+  if grep -q '^ID=nixos' /etc/os-release; then
+    SYSTEMD_PATH="/run/systemd/system"
+    echo "WARNING: NixOS env, temporary manual activation"
+  else
+    SYSTEMD_PATH="/etc/systemd/system"
+  fi
+
+  mkdir -p "${SYSTEMD_PATH}/machine-${ID}.scope.wants" ${SYSTEMD_PATH}/multi-user.target.wants/
+  ln -fs "${SYSTEMD_PATH}/nixunits-network@.service" "${SYSTEMD_PATH}/$_unit_net"
+  ln -fs "${SYSTEMD_PATH}/nixunits-network@.service" "${SYSTEMD_PATH}/machine-${ID}.scope.wants/$_unit_net"
+  ln -fs "${SYSTEMD_PATH}/nixunits@.service" "${SYSTEMD_PATH}/$_unit"
+  ln -fs "${SYSTEMD_PATH}/nixunits@.service" "${SYSTEMD_PATH}/multi-user.target.wants/$_unit"
+  systemctl daemon-reload
+fi
+
 STARTED=$(systemctl show "$_unit" --no-pager |grep ^SubState=running >/dev/null && echo true || echo false)
 if [ "$START" = true ] &&  [ "$STARTED" != true ] || [ "$RESTART" = true ]
 then
-  echo "systemctl restart $_unit"
   systemctl restart "$_unit"
   systemctl status  "$_unit" --no-pager
 fi

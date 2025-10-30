@@ -1,5 +1,5 @@
 #!/bin/bash
-set -xeo pipefail
+set -eo pipefail
 trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 
 # shellcheck disable=SC1091
@@ -8,16 +8,20 @@ trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 NFT=_NFT_BIN_SED_
 
 container_exec() {
-  log_msg "[ Container ] exec $1"
+  log_msg "[ Container ($NS_PID) ] exec $1"
   nsenter --target "$NS_PID" --mount --uts --ipc --net --pid -- /bin/sh -c "$1"
 }
 
 container_host_exec() {
-  log_msg "[ Container ] netns exec $1"
+  log_msg "[ Container ($NS_PID) ] netns exec $1"
   nsenter --target "$NS_PID" --uts --ipc --net --pid -- /bin/sh -c "$1"
 }
 
 interface_ns_set() {
+  container_host_exec "ip link set dev $INTERFACE down"
+  container_host_exec "ip addr flush dev $INTERFACE"
+  container_host_exec "ip route flush dev $INTERFACE"
+  container_host_exec "ip -6 route flush dev $INTERFACE"
   container_host_exec "ip link set dev $INTERFACE up"
   if [ -n "$IP4" ]; then
     container_host_exec "ip -4 a add $IP4 dev $INTERFACE"
@@ -50,13 +54,17 @@ interface_ns_set() {
 
 interface_host_set() {
   if [ -n "$HOST_INTERFACE" ]; then
+    host_exec "ip link set dev $HOST_INTERFACE down"
+    host_exec "ip addr flush dev $HOST_INTERFACE"
+    host_exec "ip route flush dev $HOST_INTERFACE"
+    host_exec "ip -6 route flush dev $HOST_INTERFACE"
+    host_exec "ip link set dev $HOST_INTERFACE up"
     if [ "$HOST_IP4" ]; then
       host_exec "ip -4 a add $HOST_IP4 dev $HOST_INTERFACE"
     fi
     if [ "$HOST_IP6" ]; then
       host_exec "ip -6 a add $HOST_IP6 dev $HOST_INTERFACE"
     fi
-    host_exec "ip link set dev $HOST_INTERFACE up"
     if [ -n "$IP4" ]; then
       if [ "${IP4#*/}" = "31" ]; then
         host_exec "ip -4 route add ${IP4%/*} dev $HOST_INTERFACE"
@@ -121,6 +129,6 @@ if [ -n "$IP6ROUTE" ]; then
   container_host_exec "ip -6 route add default via $IP6ROUTE"
 fi
 
+nsenter --target "$NS_PID" --all -- /bin/sh -c "> /run/net-ready"
 
 log_msg "### nixunits END NETWORK CONFIG ###"
-
