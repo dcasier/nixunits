@@ -41,8 +41,25 @@ let
 in
 
 {
+    paths."${moduleName}-network@" = {
+      description = "Watch for machine %i readiness";
+      pathConfig = {
+        PathExists = "/run/systemd/machines/%i";
+      };
+    };
     services = listToAttrs (filter (x: x.value != null) (
       [{
+        name = "${moduleName}-network@";
+        value = {
+          description = "Configure network for machine %i";
+          serviceConfig = {
+            EnvironmentFile = "${global.unitConf "%i"}";
+            ExecStart = "${nixunits}/unit/nixunit-network-config";
+            Type = "oneshot";
+          };
+        };
+      }
+      {
         name = "${moduleName}@";
         value = unit // {
           aliases = mapAttrsToList (

@@ -15,6 +15,8 @@ pkgs.writeShellApplication {
     mkdir -p /usr/local/bin
     ln -sfn "${nixunits}/bin/nixunits" /usr/local/bin/nixunits
     ln -sfn "${serviceUnit}/nixunits@.service" /etc/systemd/system/nixunits@.service
+    ln -sfn "${serviceUnit}/nixunits@.path" /etc/systemd/system/nixunits@.service
+    ln -sfn "${serviceUnit}/nixunits@.service" /etc/systemd/system/nixunits@.service
 
     systemctl daemon-reload
 

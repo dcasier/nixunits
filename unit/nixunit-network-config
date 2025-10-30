@@ -1,0 +1,126 @@
+#!/bin/bash
+set -xeo pipefail
+trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
+
+# shellcheck disable=SC1091
+. _NIXUNITS_PATH_SED_/bin/common.sh
+
+NFT=_NFT_BIN_SED_
+
+container_exec() {
+  log_msg "[ Container ] exec $1"
+  nsenter --target "$NS_PID" --mount --uts --ipc --net --pid -- /bin/sh -c "$1"
+}
+
+container_host_exec() {
+  log_msg "[ Container ] netns exec $1"
+  nsenter --target "$NS_PID" --uts --ipc --net --pid -- /bin/sh -c "$1"
+}
+
+interface_ns_set() {
+  container_host_exec "ip link set dev $INTERFACE up"
+  if [ -n "$IP4" ]; then
+    container_host_exec "ip -4 a add $IP4 dev $INTERFACE"
+  fi
+  if [ -n "$IP6" ]; then
+    container_host_exec "ip -6 a add $IP6 dev $INTERFACE"
+  fi
+
+  if [ -n "$HOST_INTERFACE" ]; then
+    if [ -n "$HOST_IP4" ]; then
+      if [ "${HOST_IP4#*/}" = "31" ]; then
+        container_host_exec "ip -4 route add ${HOST_IP4%/*} dev $INTERFACE"
+      else
+        container_host_exec "ip -4 route add $HOST_IP4 dev $INTERFACE"
+      fi
+    fi
+    if [ -n "$HOST_IP6" ]; then
+      if [ "${HOST_IP6#*/}" = "127" ]; then
+        container_host_exec "ip -6 route add ${HOST_IP6%/*} dev $INTERFACE"
+      else
+        container_host_exec "ip -6 route add $HOST_IP6 dev $INTERFACE"
+      fi
+    fi
+  fi
+
+  # Fix resolv.conf
+  _resolv=$(cat /etc/resolv.conf)
+  container_exec "echo \"$_resolv\" > /etc/resolv.conf"
+}
+
+interface_host_set() {
+  if [ -n "$HOST_INTERFACE" ]; then
+    if [ "$HOST_IP4" ]; then
+      host_exec "ip -4 a add $HOST_IP4 dev $HOST_INTERFACE"
+    fi
+    if [ "$HOST_IP6" ]; then
+      host_exec "ip -6 a add $HOST_IP6 dev $HOST_INTERFACE"
+    fi
+    host_exec "ip link set dev $HOST_INTERFACE up"
+    if [ -n "$IP4" ]; then
+      if [ "${IP4#*/}" = "31" ]; then
+        host_exec "ip -4 route add ${IP4%/*} dev $HOST_INTERFACE"
+      else
+        host_exec "ip -4 route add $IP4 dev $HOST_INTERFACE"
+      fi
+    fi
+    if [ -n "$IP6" ]; then
+      if [ "${IP6#*/}" = "127" ]; then
+        host_exec "ip -6 route add ${IP6%/*} dev $HOST_INTERFACE"
+      else
+        host_exec "ip -6 route add $IP6 dev $HOST_INTERFACE"
+      fi
+    fi
+  fi
+}
+
+context_set() {
+  if { { [ -n "$IP4" ] && [ -n "$HOST_IP4" ]; } || { [ -n "$IP6" ] && [ -n "$HOST_IP6" ]; }; }; then
+    if_infos=$(container_host_exec "ip -j link" | jq '.[] | select(.link_index != null)')
+    host_interface_id=$(echo "$if_infos" | jq '.link_index')
+    INTERFACE=$(echo "$if_infos" | jq -r '.ifname')
+    HOST_INTERFACE=$(ip -j link | jq -r ".[] | select(.ifindex == $host_interface_id) | .ifname")
+  fi
+}
+
+###############################################################################
+# Main
+###############################################################################
+
+_ROOT_=/var/lib/nixunits/containers/$NAME/root
+
+log_block_msg "### nixunits START NETWORK CONFIG"
+
+NS_PID=$(pid_leader "$NAME")
+
+if [ -n "$NFT_FILE" ]; then
+  container_host_exec "$NFT -f ${_ROOT_}$NFT_FILE"
+fi
+
+if [ -n "$SYSCTL_FILE" ]; then
+  container_host_exec "sysctl -p ${_ROOT_}$SYSCTL_FILE"
+fi
+
+if [ -z "$(interfaces_list)" ]
+then
+  log_block_msg "### Private network without IP (exit)"
+else
+  for iface in $(interfaces_list); do
+    interface_env "$iface"
+    context_set
+    log_block_msg "### Configure interface - ${INTERFACE} -"
+    interface_ns_set
+    interface_host_set
+  done
+fi
+
+if [ -n "$IP4ROUTE" ]; then
+  container_host_exec "ip -4 route add default via $IP4ROUTE"
+fi
+if [ -n "$IP6ROUTE" ]; then
+  container_host_exec "ip -6 route add default via $IP6ROUTE"
+fi
+
+
+log_msg "### nixunits END NETWORK CONFIG ###"
+
