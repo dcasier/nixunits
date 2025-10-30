@@ -13,8 +13,6 @@ usage() {
   echo "  -r  restart ?"
   echo "  -s  start ?"
   echo
-  echo "Examples:"
-  echo
 
   test -n "$1" && exit "$1"
   exit 0
@@ -83,9 +81,15 @@ if [ "${DEBUG:-false}" = true ]; then
 fi
 "${cmd[@]}"
 
+
+DB="$CONTAINER_DIR/root/nix/var/nix/db/"
+
 cleanup() {
   umount "$CONTAINER_DIR/merged"
+  test -d "${DB}/*" && rm "${DB}/*" || true
 }
+
+test -d "${DB}/*" && rm "${DB}/*" || true
 
 mount -t overlay overlay -o "lowerdir=${STORE_DEFAULT}/root,upperdir=$CONTAINER_DIR/root,workdir=$CONTAINER_DIR/work" "$CONTAINER_DIR/merged"
 trap cleanup EXIT

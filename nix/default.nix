@@ -1,15 +1,18 @@
 {
-  id
-, nixpkgs? <nixpkgs>
-, config
+  serviceConfig ? null
+, id ? null
+, pkgs
 }:
 
 let
-  _modules = nixpkgs + "/nixos/modules";
+  _modules = pkgs.path + "/nixos/modules";
   lib = pkgs.lib;
-  pkgs = import nixpkgs {};
 
   global = import ./global.nix {inherit lib pkgs;};
+  nixunits = pkgs.callPackage ../nixunits.nix {
+    inherit (pkgs) lib stdenv;
+    inherit pkgs;
+  };
 
   modules = [
     (_modules + "/misc/extra-arguments.nix")
@@ -27,10 +30,19 @@ let
         };
       };
     })
+  ] ++ (if serviceConfig == null then [
+    ({ config, lib, pkgs, ... }: {
+      config = {
+        systemd = import ./systemd.nix {
+          inherit config global lib pkgs nixunits;
+        };
+      };
+    })
+  ] else [
     {
-      ${global.moduleName}.${id} = config;
+      ${global.moduleName}.${id} = serviceConfig;
     }
-  ];
+  ]);
 
   utils = import ./utils.nix;
 
@@ -40,4 +52,8 @@ let
       specialArgs = {inherit pkgs;};
     })
   ).config.system;
-in system.build.etc
+in
+if serviceConfig == null then
+  system
+else
+  system.build.etc

@@ -13,7 +13,7 @@ stdenv.mkDerivation rec {
     cp -r $src/nix/ $out/
     cp -r $src/tests/* $out/tests/
     cp -r $src/unit/* $out/unit/
-    ln -s ../tests/nixunits_tests $out/bin/
+    ln -fs ../tests/nixunits_tests $out/bin/
 
     patchShebangs $out/bin
 

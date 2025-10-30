@@ -1,8 +1,8 @@
-{ nixpkgs ? import <nixpkgs> {}, lib ? nixpkgs.lib, pkgs ? nixpkgs, ... }:
+{ lib, pkgs, ... }:
 let
-  global = import ../global.nix { inherit lib pkgs; };
   nixunits = pkgs.callPackage ../../nixunits.nix { inherit (pkgs) lib stdenv pkgs; };
-  installTool = pkgs.callPackage ./install.nix { inherit lib pkgs global nixunits; };
+  installTool = pkgs.callPackage ./install.nix { inherit lib pkgs sys nixunits; };
+  sys = pkgs.callPackage ../default.nix { inherit pkgs; };
 in
 pkgs.stdenv.mkDerivation {
   name = "nixunits-install";

@@ -89,15 +89,7 @@ context_set() {
 
 _ROOT_=/var/lib/nixunits/containers/$NAME/root
 
-log_block_msg "### nixunits START"
-
-inotifywait -e create "/run/systemd/machines" |
-while read -r _ _ file; do
-    echo $file >&2
-    if [ "$file" = "$NAME" ]; then
-        break
-    fi
-done
+log_block_msg "### nixunits START POST"
 
 NS_PID=$(pid_leader "$NAME")
 
@@ -133,5 +125,5 @@ if [ -n "$EXTRA_FILE" ];then
   container_exec "$(cat "${_ROOT_}$EXTRA_FILE")"
 fi
 
-log_msg "### nixunits START OK ###"
+log_msg "### nixunits END START POST ###"
 

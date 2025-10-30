@@ -15,16 +15,16 @@
       mkContainer = { configFile, propertiesJSON }:
         let
           properties = builtins.fromJSON(propertiesJSON);
-          config = import configFile { inherit pkgs properties; lib = pkgs.lib; };
+          serviceConfig = import configFile { inherit pkgs properties; lib = pkgs.lib; };
           id = properties.id;
         in
           pkgs.callPackage ./nix/default.nix {
-              inherit id config;
+              inherit id serviceConfig pkgs;
           };
     });
 
     packages = forAllSystems (pkgs: {
-      portable = import ./nix/portable { nixpkgs = pkgs; };
+      portable = import ./nix/portable { inherit (pkgs) lib pkgs; };
       nixunits = import ./nixunits.nix { inherit (pkgs) lib stdenv pkgs; };
     });
 

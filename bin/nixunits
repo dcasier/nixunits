@@ -10,6 +10,7 @@ usage() {
   echo "  build"
   echo "  delete"
   echo "  ip6_get <container name>"
+  echo "  install"
   echo "  list"
   echo "  nsenter|shell"
   echo "  start"
@@ -35,6 +36,8 @@ case "$ACTION" in
     _NIXUNITS_PATH_SED_/bin/build.sh "$@";;
   delete)
     _NIXUNITS_PATH_SED_/bin/delete.sh "$@";;
+  install)
+    _NIXUNITS_PATH_SED_/bin/install.sh "$@";;
   ip6_get)
     ip6_crc32 "$1";;
   list)
