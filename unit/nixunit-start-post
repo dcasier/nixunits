@@ -5,6 +5,11 @@ trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 # shellcheck disable=SC1091
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
+container_exec() {
+  log_msg "[ Container ($NS_PID) ] exec $1"
+  nsenter --target "$NS_PID" --mount --uts --ipc --net --pid -- /bin/sh -c "$1"
+}
+
 container_host_exec() {
   log_msg "[ Container ] netns exec $1"
   nsenter --target "$NS_PID" --uts --ipc --net --pid -- /bin/sh -c "$1"
