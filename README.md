@@ -234,6 +234,7 @@ in {
   caps_allow = [ "CAP_NET_ADMIN" ];
 
   config = {
+    networking.firewall.enable = false;
     services.dnsmasq.enable = true;
     system.stateVersion = "25.05";
   };
