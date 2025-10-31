@@ -27,7 +27,7 @@ let
     SuccessExitStatus = "133";
     SyslogIdentifier = "nixunit %i";
     TasksMax = "16384";
-    TimeoutStartSec = "1min";
+    TimeoutStartSec = "10min";
     Type = "notify";
   };
 

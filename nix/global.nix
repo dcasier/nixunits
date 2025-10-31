@@ -56,8 +56,8 @@ let
 #        wantedBy = [ "network-pre.target" ];
 #      };
       services."wait-net-ready" = {
-        before = [ "network-pre.target" ];
-        wantedBy = [ "network-pre.target" ];
+        before = [ "network-online.target" ];
+        wantedBy = [ "network-online.target" ];
         description = "Wait network ready";
         serviceConfig = let
           waitNetReady = pkgs.writeShellScript "wait-net-ready.sh" ''
@@ -66,7 +66,10 @@ let
             while ! [ -f "/run/net-ready" ];do
                 sleep 0.1
             done
+            echo "###"
+            ${pkgs.iproute2}/bin/ip a
             echo "### Network ready"
+            sleep 1
             rm -f /run/net-ready
           '';
         in {
