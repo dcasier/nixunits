@@ -10,6 +10,10 @@ container_exec() {
   nsenter --target "$NS_PID" --mount --uts --ipc --net --pid -- /bin/sh -c "$1"
 }
 
+container_host_exec() {
+  log_msg "[ Container ] netns exec $1"
+  nsenter --target "$NS_PID" --uts --ipc --net --pid -- /bin/sh -c "$1"
+}
 
 ###############################################################################
 # Main
@@ -22,7 +26,7 @@ log_block_msg "### nixunits START POST"
 NS_PID=$(pid_leader "$NAME")
 
 if [ -n "$SYSCTL_FILE" ]; then
-  container_exec "sysctl -p ${_ROOT_}$SYSCTL_FILE"
+  container_host_exec "sysctl -p ${_ROOT_}$SYSCTL_FILE"
 fi
 
 if [ -n "$EXTRA_FILE" ];then
