@@ -6,7 +6,7 @@ trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
 NFT=_NFT_BIN_SED_
-
+SH="$SYSTEM_PATH/sw/bin/sh"
 
 container_exec() {
   log_msg "[ Container ($NS_PID) ] netns exec $1"
@@ -46,6 +46,8 @@ interface_ns_set() {
 
 interface_host_set() {
   if [ -n "$HOST_INTERFACE" ]; then
+    log_msg "### Configure interface host - ${HOST_INTERFACE} -"
+
     host_exec "ip link set dev $HOST_INTERFACE down"
     host_exec "ip addr flush dev $HOST_INTERFACE"
     host_exec "ip route flush dev $HOST_INTERFACE"
@@ -104,7 +106,7 @@ else
   for iface in $(interfaces_list); do
     interface_env "$iface"
     context_set
-    log_block_msg "### Configure interface - ${INTERFACE} -"
+    log_msg "### Configure interface container - ${INTERFACE} -"
     interface_ns_set
     interface_host_set
   done
@@ -117,6 +119,6 @@ if [ -n "$IP6ROUTE" ]; then
   container_exec "ip -6 route add default via $IP6ROUTE"
 fi
 
-nsenter --target "$NS_PID" --all -- /bin/sh -c "> /run/net-ready"
+nsenter --target "$NS_PID" --all -- "$SH" -c "> /run/net-ready"
 
 log_msg "### nixunits END NETWORK CONFIG ###"
