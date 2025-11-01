@@ -33,10 +33,9 @@ let
 
   unit = {
     description = "NixUnit container '%i'";
-    unitConfig.RequiresMountsFor = "${global.pathContainers}/%i";
     path = [ pkgs.iproute2 ];
     restartIfChanged = false;
-    after = [ "network-online.target" ];
+    unitConfig.RequiresMountsFor = "${global.pathContainers}/%i";
     wantedBy = [ "multi-user.target" ];
     inherit serviceConfig;
   };
@@ -47,7 +46,7 @@ in
       {
         name = "${moduleName}-network@";
         value = {
-          after = [ "machine-%i.scope" "network-online.target" ];
+          after = [ "machine-%i.scope" ];
           bindsTo = [ "machine-%i.scope" ];
           description = "Configure network for machine %i";
           serviceConfig = {

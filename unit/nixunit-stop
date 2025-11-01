@@ -3,6 +3,13 @@ set -eo pipefail
 
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
+interface_ovs_delete() {
+  log_msg "Delete OVS interface - $INTERFACE - "
+  if ovs_port_exists "$INTERFACE"; then
+    ovs_port_del "$INTERFACE"
+  fi
+}
+
 log_block_msg "### nixunits STOP"
 
 NS_PID=$(host_exec "ps --ppid $MAINPID -o pid h")
@@ -27,6 +34,13 @@ machinectl terminate "$NAME"
 
 while machinectl status "$NAME" >/dev/null 2>&1; do
   sleep 1
+done
+
+for iface in $(interfaces_list); do
+  interface_env "$iface"
+  if [ -n "$OVS_BRIDGE" ]; then
+    interface_ovs_delete
+  fi
 done
 
 log_block_msg "### nixunits STOP END"

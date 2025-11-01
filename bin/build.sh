@@ -125,10 +125,8 @@ if [ "$ENABLE" = true ];then
     SYSTEMD_PATH="/etc/systemd/system"
   fi
 
-  mkdir -p "${SYSTEMD_PATH}/machine-${ID}.scope.wants" ${SYSTEMD_PATH}/multi-user.target.wants/
-  ln -fs "${SYSTEMD_PATH}/nixunits-network@.service" "${SYSTEMD_PATH}/$_unit_net"
+  mkdir -p "${SYSTEMD_PATH}/machine-${ID}.scope.wants" ${SYSTEMD_PATH}/machines.target.wants/
   ln -fs "${SYSTEMD_PATH}/nixunits-network@.service" "${SYSTEMD_PATH}/machine-${ID}.scope.wants/$_unit_net"
-  ln -fs "${SYSTEMD_PATH}/nixunits@.service" "${SYSTEMD_PATH}/$_unit"
   ln -fs "${SYSTEMD_PATH}/nixunits@.service" "${SYSTEMD_PATH}/multi-user.target.wants/$_unit"
   systemctl daemon-reload
 fi

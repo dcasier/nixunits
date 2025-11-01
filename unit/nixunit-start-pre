@@ -51,4 +51,6 @@ for iface in $(interfaces_list); do
   fi
 done
 
+systemctl restart "nixunits-network@${NAME}.service" &
+
 log_msg "### nixunits END PRE ###"

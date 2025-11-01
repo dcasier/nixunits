@@ -94,6 +94,7 @@ pid_with_same_ns_find() {
 
 pid_leader() {
   # machinectl show "$1" --no-pager |grep ^Leader= |cut -d'=' -f2
+
   machinectl show "$1" -p Leader --value
 }
 

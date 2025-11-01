@@ -27,6 +27,7 @@ else
   _args=$(shell_args "$ID")
 fi
 
+echo "[ Container ($(pid_leader "$ID")) ]"
 if test -z "$*"
 then
   # shellcheck disable=SC2086

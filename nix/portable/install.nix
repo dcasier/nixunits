@@ -12,14 +12,12 @@ pkgs.writeShellApplication {
   in ''
     set -euo pipefail
 
-    mkdir -p /var/lib/nixunits/store/default/root /var/lib/nixunits/containers /var/lib/nixunits/etc/systemd
+    mkdir -p /var/lib/nixunits/store/defaultroot /var/lib/nixunits/containers
 
     mkdir -p /usr/local/bin
     ln -sfn "${nixunits}/bin/nixunits" /usr/local/bin/nixunits
-    ln -sfn "${networkUnit}/nixunits-network@.service" /var/lib/nixunits/etc/systemd/nixunits-network@.service
-    ln -sfn "${serviceUnit}/nixunits@.service" /var/lib/nixunits/etc/systemd/nixunits@.service
-    ln -sfn /var/lib/nixunits/etc/systemd/nixunits-network@.service /etc/systemd/system/nixunits-network@.service
-    ln -sfn /var/lib/nixunits/etc/systemd/nixunits@.service /etc/systemd/system/nixunits@.service
+    ln -sfn "${networkUnit}/nixunits-network@.service" /etc/systemd/system/nixunits-network@.service
+    ln -sfn "${serviceUnit}/nixunits@.service" /etc/systemd/system/nixunits@.service
 
     systemctl daemon-reload
     systemctl reset-failed

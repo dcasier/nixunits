@@ -69,10 +69,8 @@ else
   SYSTEMD_PATH="/etc/systemd/system"
 fi
 
-test -f "${SYSTEMD_PATH}/$_unit_net" && rm "${SYSTEMD_PATH}/$_unit_net" || true
-test -f "${SYSTEMD_PATH}/$_unit" && rm "${SYSTEMD_PATH}/$_unit" || true
+test -f "${SYSTEMD_PATH}/multi-user.target.wants/$_unit" && rm "${SYSTEMD_PATH}/multi-user.target.wants/$_unit" || true
 test -f "${SYSTEMD_PATH}/machine-${ID}.scope.wants/$_unit_net" && rm "${SYSTEMD_PATH}/machine-${ID}.scope.wants/$_unit_net" || true
-test -f "${SYSTEMD_PATH}/multi-user.target.wants/$_unit_net" && rm "${SYSTEMD_PATH}/multi-user.target.wants/$_unit_net" || true
 test -d "${SYSTEMD_PATH}/machine-${ID}.scope.wants" && rmdir "${SYSTEMD_PATH}/machine-${ID}.scope.wants" || true
 
 systemctl stop "$_unit"
