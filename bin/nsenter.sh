@@ -31,7 +31,7 @@ else
   _args=$(shell_args "$ID")
 fi
 
-test $QUIET != "false" && echo "[ Container ($(pid_leader "$ID")) ]" >&2
+test $QUIET == "false" && echo "[ Container ($(pid_leader "$ID")) ]" >&2
 if test -z "$*"
 then
   # shellcheck disable=SC2086
