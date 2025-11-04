@@ -22,6 +22,7 @@ while getopts "qnh" opt; do
       usage 1;;
   esac
 done
+shift $((OPTIND - 1))
 
 if [ "${NET:-false}" = true ]
 then
