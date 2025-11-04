@@ -30,11 +30,29 @@ for p in $UNWANTED; do
   [ -d "/proc/$p" ] && kill -9 "$p" 2>/dev/null
 done
 
-machinectl terminate "$NAME"
+machinectl poweroff "$NAME" 2>/dev/null || true
 
-while machinectl status "$NAME" >/dev/null 2>&1; do
+for _ in $(seq 1 90); do
+  if ! machinectl status "$NAME" >/dev/null 2>&1; then
+    break
+  fi
   sleep 1
 done
+
+if machinectl status "$NAME" >/dev/null 2>&1; then
+  machinectl terminate "$NAME"
+  for _ in $(seq 1 60); do
+    machinectl status "$NAME" >/dev/null 2>&1 || exit 0
+    sleep 1
+  done
+fi
+
+if machinectl status "$NAME" >/dev/null 2>&1; then
+  echo "SIGKILL !"
+  machinectl kill "$NAME" --signal=SIGKILL 2>/dev/null || true
+fi
+
+systemctl reset-failed "nixunits-network@${NAME}.service" "machine-${NAME}.scope" 2>/dev/null || true
 
 for iface in $(interfaces_list); do
   interface_env "$iface"
