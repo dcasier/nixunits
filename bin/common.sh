@@ -33,6 +33,10 @@ interface_env() {
   done
 }
 
+interface_exists() {
+  ip link show "$1" &>/dev/null || return 1
+}
+
 interfaces_list() {
   local var ifname
   for var in "${!NIXUNITS__ETH__@}"; do
@@ -70,6 +74,22 @@ log_block_msg() {
   log_msg "########################################"
   log_msg "# $1"
   log_msg "########################################"
+}
+
+ovs_port_exists() {
+  ovs-vsctl --if-exists get Interface "$1" name &>/dev/null
+}
+
+ovs_port_del() {
+  ovs-vsctl --if-exists del-port "$OVS_BRIDGE" "$1"
+}
+
+ovs_port_add() {
+  if [[ -n "$OVS_VLAN" ]]; then
+    ovs-vsctl add-port "$OVS_BRIDGE" "$1" tag="$OVS_VLAN" -- set interface "$1" type=internal
+  else
+    ovs-vsctl add-port "$OVS_BRIDGE" "$1" -- set interface "$1" type=internal
+  fi
 }
 
 pid_in_ns_not_in_container() {
