@@ -36,7 +36,7 @@ case "$ACTION" in
     _NIXUNITS_PATH_SED_/bin/build.sh "$@";;
   delete)
     _NIXUNITS_PATH_SED_/bin/delete.sh "$@";;
-  status)
+  enable)
     _NIXUNITS_PATH_SED_/bin/enable.sh "$@";;
   ip6_get)
     ip6_crc32 "$1";;
