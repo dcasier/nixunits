@@ -115,8 +115,20 @@ fi
 if [ -n "$IP4ROUTE" ]; then
   container_exec "ip -4 route add default via $IP4ROUTE"
 fi
+
 if [ -n "$IP6ROUTE" ]; then
-  container_exec "ip -6 route add default via $IP6ROUTE"
+  if echo "$IP6ROUTE" | grep -q "^fe80"; then
+    iface_count=$(interfaces_list | wc -w)
+    if [ "$iface_count" -eq 1 ]; then
+      iface=$(interfaces_list)
+      container_exec "ip -6 route add default via $IP6ROUTE dev $iface"
+    else
+      log_msg "### IPv6 route fe80 detected but multiple interfaces found"
+      exit 1
+    fi
+  else
+    container_exec "ip -6 route add default via $IP6ROUTE"
+  fi
 fi
 
 nsenter --target "$NS_PID" --all -- "$SH" -c "> /run/net-ready"

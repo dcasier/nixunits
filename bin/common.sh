@@ -6,7 +6,7 @@ export PATH
 unit_dir() { echo "$_VAR/$1"; }
 
 unit_conf() { echo "$(unit_dir "$1")/unit.conf"; }
-unit_nix() { echo "$(unit_dir "$1")/unit.nix"; }
+unit_parameters() { echo "$(unit_dir "$1")/parameters.json"; }
 unit_root() { echo "$(unit_dir "$1")/root/"; }
 
 host_exec() {

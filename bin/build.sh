@@ -71,7 +71,6 @@ ARGS+=(--impure --no-link)
 
 mkdir -p "$STORE_DEFAULT/root" "$CONTAINER_DIR/merged" "$CONTAINER_DIR/root/usr" "$CONTAINER_DIR/work"
 chmod 2750 "$CONTAINER_DIR"
-_unix_nix="$(unit_nix "$ID")"
 
 MK_CONTAINER="(builtins.getFlake \"path:_NIXUNITS_PATH_SED_\").lib.x86_64-linux.mkContainer"
 
@@ -112,6 +111,7 @@ RESULT_PATH="$("${cmd[@]}")"
 _ln_src="${CONTAINER_DIR}/root$(readlink -f "${CONTAINER_DIR}/root${RESULT_PATH}/etc/nixunits/$ID.conf")"
 _ln_dst="$CONTAINER_DIR/unit.conf"
 ln -fs "$_ln_src" "$_ln_dst"
+cp "$PARAMETERS_FILE" "$(unit_parameters "$ID")"
 
 _unit="nixunits@${ID}.service"
 _unit_net="nixunits-network@${ID}.service"

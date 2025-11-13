@@ -6,7 +6,7 @@ set -e
 usage() {
   echo "Usage : nixunits status <container id> [options]"
   echo "Available options:"
-  echo "  -cc <service config content (for comparison)>"
+  echo "  -j JSON parameters file (for comparison)"
   echo "  -d details"
   echo "  -o <output [json/plain]>"
   echo "  -h, --help"
@@ -27,16 +27,12 @@ shift
 DETAILS=false
 OUTPUT="plain"
 
-while getopts "c:do:h:" opt; do
+while getopts "dj:o:h:" opt; do
   case $opt in
-    c)
-      case $OPTARG in
-        c) serviceContent="${!OPTIND}"; OPTIND=$((OPTIND + 1))
-          test "$serviceContent" == "-" && serviceContent=$(cat);;
-        *) echo "Invalid option for -cc"; usage 1;;
-      esac;;
     d)
       DETAILS=true;;
+    j)
+      PARAMETERS_FILE=$OPTARG;;
     o)
       if [ "$OPTARG" != "plain" ] && [ "$OPTARG" != "json" ]; then
         echo "Invalid output format : $OPTARG"
@@ -52,7 +48,7 @@ while getopts "c:do:h:" opt; do
 done
 
 CONF_EXIST=false
-NIX_SAME=false
+NIX_SAME=unknown
 DATA_EXIST=false
 DECLARED_IN_NIXOS=false
 STATUS=$(test -f "$(unit_conf "$id")" && echo "created" || echo "initial")
@@ -74,7 +70,6 @@ else
   fi
 fi
 _unit_conf=$(unit_conf "$id")
-_unit_nix=$(unit_nix "$id")
 
 if [ "$STATUS" != "initial" ]
 then
@@ -82,10 +77,10 @@ then
   then
     CONF_EXIST="true"
     DECLARED_IN_NIXOS=$(in_nixos "$id" && echo "true" || echo "false")
-    if [ "$serviceContent" != "" ]
+    if [ "$PARAMETERS_FILE" != "" ]
     then
-      _initial_nix=$(cat "$_unit_nix")
-      test "$serviceContent" = "$_initial_nix" && NIX_SAME=true
+      NIX_SAME=false
+      diff "PARAMETERS_FILE" "$(unit_parameters "$ID")" >/dev/null && NIX_SAME=true
     fi
   else
     CONF_EXIST="false"

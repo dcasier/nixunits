@@ -2,7 +2,6 @@
 let
   moduleName = "nixunits";
   unitConf = name: "${pathContainers}/${name}/unit.conf";
-  fileNix = name: "${pathContainers}/${name}/unit.nix";
   pathRoot = name: "${pathContainers}/${name}/root";
   pathContainers = "${pathVar}/containers";
   pathVar = "/var/lib/${moduleName}";
@@ -166,7 +165,7 @@ let
 
 in with lib; {
   inherit conf
-    unitConf fileNix
+    unitConf
     moduleName
     pathContainers pathRoot pathVar;
   options = {
