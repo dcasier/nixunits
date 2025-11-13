@@ -117,7 +117,7 @@ _unit="nixunits@${ID}.service"
 _unit_net="nixunits-network@${ID}.service"
 
 if [ "$ENABLE" = true ];then
-  _NIXUNITS_PATH_SED_/bin/enable.sh -j "$PARAMETERS_FILE"
+  _NIXUNITS_PATH_SED_/bin/enable.sh "$ID"
 fi
 
 STARTED=$(systemctl show "$_unit" --no-pager |grep ^SubState=running >/dev/null && echo true || echo false)

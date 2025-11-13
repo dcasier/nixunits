@@ -59,21 +59,8 @@ then
   fi
 fi
 
-echo
-_unit="nixunits@$ID.service"
-_unit_net="nixunits-network@$ID.service"
-
-if grep -q '^ID=nixos' /etc/os-release; then
-  SYSTEMD_PATH="/run/systemd/system"
-else
-  SYSTEMD_PATH="/etc/systemd/system"
-fi
-
-test -f "${SYSTEMD_PATH}/multi-user.target.wants/$_unit" && rm "${SYSTEMD_PATH}/multi-user.target.wants/$_unit" || true
-test -f "${SYSTEMD_PATH}/machine-${ID}.scope.wants/$_unit_net" && rm "${SYSTEMD_PATH}/machine-${ID}.scope.wants/$_unit_net" || true
-test -d "${SYSTEMD_PATH}/machine-${ID}.scope.wants" && rmdir "${SYSTEMD_PATH}/machine-${ID}.scope.wants" || true
-
-systemctl stop "$_unit"
+_NIXUNITS_PATH_SED_/bin/disable.sh "$ID"
+systemctl stop "nixunits@$ID.service"
 
 if $RECURSIVE
 then
