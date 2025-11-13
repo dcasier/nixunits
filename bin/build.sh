@@ -117,23 +117,12 @@ _unit="nixunits@${ID}.service"
 _unit_net="nixunits-network@${ID}.service"
 
 if [ "$ENABLE" = true ];then
-  set -x
-  if grep -q '^ID=nixos' /etc/os-release; then
-    SYSTEMD_PATH="/run/systemd/system"
-    echo "WARNING: NixOS env, temporary manual activation"
-  else
-    SYSTEMD_PATH="/etc/systemd/system"
-  fi
-
-  mkdir -p "${SYSTEMD_PATH}/machine-${ID}.scope.wants" ${SYSTEMD_PATH}/machines.target.wants/
-  ln -fs "${SYSTEMD_PATH}/nixunits-network@.service" "${SYSTEMD_PATH}/machine-${ID}.scope.wants/$_unit_net"
-  ln -fs "${SYSTEMD_PATH}/nixunits@.service" "${SYSTEMD_PATH}/multi-user.target.wants/$_unit"
-  systemctl daemon-reload
+  _NIXUNITS_PATH_SED_/bin/enable.sh -j "$PARAMETERS_FILE"
 fi
 
 STARTED=$(systemctl show "$_unit" --no-pager |grep ^SubState=running >/dev/null && echo true || echo false)
 if [ "$START" = true ] &&  [ "$STARTED" != true ] || [ "$RESTART" = true ]
 then
   systemctl restart "$_unit"
-  systemctl status  "$_unit" --no-pager
+  systemctl status "$_unit" --no-pager
 fi

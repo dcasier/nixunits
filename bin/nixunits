@@ -9,6 +9,7 @@ usage() {
   echo "Available actions:"
   echo "  build"
   echo "  delete"
+  echo "  enable"
   echo "  ip6_get <container name>"
   echo "  list"
   echo "  nsenter|shell"
@@ -35,6 +36,8 @@ case "$ACTION" in
     _NIXUNITS_PATH_SED_/bin/build.sh "$@";;
   delete)
     _NIXUNITS_PATH_SED_/bin/delete.sh "$@";;
+  status)
+    _NIXUNITS_PATH_SED_/bin/enable.sh "$@";;
   ip6_get)
     ip6_crc32 "$1";;
   list)
