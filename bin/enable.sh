@@ -40,8 +40,8 @@ else
   SYSTEMD_PATH="/etc/systemd/system"
 fi
 
-mkdir -p "${SYSTEMD_PATH}/machine-${id}.scope.wants" ${SYSTEMD_PATH}/machines.target.wants/
-ln -fs "${SYSTEMD_PATH}/nixunits-network@.service" "${SYSTEMD_PATH}/machine-${id}.scope.wants/$_unit_net"
-ln -fs "${SYSTEMD_PATH}/nixunits@.service" "${SYSTEMD_PATH}/multi-user.target.wants/$_unit"
+mkdir -p "${SYSTEMD_PATH}/machine-${id}.scope.wants" ${SYSTEMD_PATH}/machines.target.wants ${SYSTEMD_PATH}/multi-user.target.wants
+ln -fs /etc/systemd/system/nixunits-network@.service "${SYSTEMD_PATH}/machine-${id}.scope.wants/$_unit_net"
+ln -fs /etc/systemd/system/nixunits@.service "${SYSTEMD_PATH}/multi-user.target.wants/$_unit"
 systemctl daemon-reload
 
