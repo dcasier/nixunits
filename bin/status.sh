@@ -48,7 +48,7 @@ while getopts "dj:o:h:" opt; do
 done
 
 CONF_EXIST=false
-NIX_SAME=unknown
+NIX_SAME=false
 DATA_EXIST=false
 DECLARED_IN_NIXOS=false
 STATUS=$(test -f "$(unit_conf "$id")" && echo "created" || echo "initial")
@@ -64,7 +64,7 @@ then
     ADDRESSES=$(echo "$STARTED_INFO" | _JQ_SED_ -r .addresses)
   fi
 else
-  sub_state=$(machinectl show "$id" |grep ^State | cut -d'=' -f2)
+  sub_state=$(machinectl show "$id" 2>/dev/null |grep ^State | cut -d'=' -f2)
   if [ "$sub_state" == "running" ]; then
     STATUS="started"
   fi
@@ -79,7 +79,6 @@ then
     DECLARED_IN_NIXOS=$(in_nixos "$id" && echo "true" || echo "false")
     if [ "$PARAMETERS_FILE" != "" ]
     then
-      NIX_SAME=false
       diff "PARAMETERS_FILE" "$(unit_parameters "$ID")" >/dev/null && NIX_SAME=true
     fi
   else
