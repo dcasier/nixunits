@@ -12,8 +12,6 @@ pkgs.writeShellApplication {
   in ''
     set -euo pipefail
 
-    mkdir -p /var/lib/nixunits/store/defaultroot /var/lib/nixunits/containers
-
     mkdir -p /usr/local/bin
     ln -sfn "${nixunits}/bin/nixunits" /usr/local/bin/nixunits
     ln -sfn "${networkUnit}/nixunits-network@.service" /etc/systemd/system/nixunits-network@.service

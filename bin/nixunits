@@ -57,9 +57,9 @@ case "$ACTION" in
       echo "ERROR: nsenter|shell exist"
       exit 1
     fi
-    systemctl restart "nixunits@$1";;
+    _NIXUNITS_PATH_SED_/bin/start.sh "$@" -r;;
   start)
-    systemctl start "nixunits@$1";;
+    _NIXUNITS_PATH_SED_/bin/start.sh "$@";;
   status)
     _NIXUNITS_PATH_SED_/bin/status.sh "$@";;
   h|help)

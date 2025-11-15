@@ -88,6 +88,7 @@ let
         "systemd-bootctl.socket"
         "systemd-hibernate-clear.service"
         "systemd-logind.service"
+        "systemd-nspawn.service"
         # "systemd-tmpfiles-setup.service"
         "suid-sgid-wrappers.service"
         "systemd-user-sessions.service"

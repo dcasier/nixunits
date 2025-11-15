@@ -16,13 +16,9 @@ usage() {
   exit 0
 }
 
+[[ "$1" =~ ^(-h|--help)$ ]] && usage 0
+test $# -eq 0 && usage 1
 ID=$1
-
-if [ "$ID" = "-h" ] || [ "$ID" = "--help" ]; then
-  usage
-fi
-
-test -z "$ID" && usage 1
 shift
 
 FORCE=false
