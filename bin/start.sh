@@ -19,6 +19,7 @@ usage() {
 test $# -eq 0 && usage 1
 ID=$1
 shift
+echo "Start $ID"
 
 CONTAINER_DIR=$(unit_dir "$ID")
 if [[ "$CONTAINER_DIR" != *var*nixunits* ]]; then
@@ -30,6 +31,7 @@ ROOT="$CONTAINER_DIR/root"
 TMP_DIR="$CONTAINER_DIR/tmp"
 ROOT_FUTUR="$TMP_DIR/root_futur"
 ROOT_OLD="$TMP_DIR/root_old"
+UID_ROOT=$(uid_root "$ID")
 
 RESTART=false
 SWITCH=false
@@ -53,6 +55,8 @@ switch() {
   fi
 
   mkdir -p "$ROOT/usr" "$ROOT_OLD"
+  chown -R $UID_ROOT:$UID_ROOT "$ROOT"
+  chown -R $UID_ROOT:$UID_ROOT "$ROOT/usr"
   test -d "$ROOT/nix" && mv "$ROOT/nix" "$ROOT_OLD/"
   mv "$ROOT_FUTUR/nix" "$ROOT/"
   test -f "$CONTAINER_DIR/unit.conf" && rm "$CONTAINER_DIR/unit.conf"
@@ -72,7 +76,9 @@ fi
 
 if [ "$STARTED" != true ] || [ "$RESTART" = true ];then
   if [ "$SWITCH" = true ]; then
+    lock_acquire
     switch
+    lock_release
   fi
 fi
 

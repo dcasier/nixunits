@@ -22,7 +22,7 @@ test $# -eq 0 && usage 1
 [[ "$1" =~ ^(-h|--help)$ ]] && usage 0
 
 DEBUG=false
-ARGS=()
+ARGS=(--impure)
 STARTS_ARGS=()
 
 while getopts "den:j:hsr" opt; do
@@ -47,7 +47,8 @@ ID=$(_JQ_SED_ -r '.id' "$PARAMETERS_FILE")
 
 in_nixos_failed "$ID"
 
-STORE_DEFAULT="/var/lib/nixunits/store/default/root"
+GCROOTS="/var/lib/nixunits/gcroots"
+STORE_DEFAULT="$PATH_CTX/store/default/root"
 CONTAINER_DIR=$(unit_dir "$ID")
 mkdir -p "$CONTAINER_DIR"
 chmod 2750 "$CONTAINER_DIR"
@@ -64,20 +65,37 @@ fi
 cleanup() {
   umount "$TMP_DIR/merged" 2>/dev/null || true
   umount -l "$TMP_DIR/merged" 2>/dev/null || true
+  lock_release
+}
+
+uid_root() {
+    if [ ! -f "$UID_INV" ];then
+        echo "$ID 1" > "$UID_INV"
+    fi
+
+    UID_SHIFT_INDEX=$(awk -v id="$ID" '$1==id {print $2}' "$UID_INV")
+    if [ -z "$UID_SHIFT_INDEX" ]; then
+      UID_SHIFT_INDEX=$(awk '/^__FREE__/ {print $2; exit}' "$UID_INV")
+      if [ -n "$UID_SHIFT_INDEX" ]; then
+          sed -i "0,/^__FREE__/s//${ID} ${UID_SHIFT_INDEX}/" "$UID_INV"
+      else
+        last_uid=$(awk '{print $2}' "$UID_INV" | tail -1)
+        UID_SHIFT_INDEX=$((last_uid + 1))
+        echo "$ID $UID_SHIFT_INDEX" >> "$UID_INV"
+      fi
+    fi
 }
 
 prepare() {
-  cleanup
   rm -rf "$TMP_DIR"
-  mkdir -p "$ROOT_FUTUR" "$TMP_DIR/work" "$TMP_DIR/merged" "$TMP_DIR/logs"
-}
+  mkdir -p "$ROOT_FUTUR" "$TMP_DIR/work" "$TMP_DIR/merged" "$TMP_DIR/logs" $GCROOTS
 
-ARGS+=(--impure --no-link)
+}
 
 build_store() {
   echo "Build store for $ID"
   local props='{\"id\": \"dummy\"}'
-  local cmd=(nix build "${ARGS[@]}" \
+  local cmd=(nix build "${ARGS[@]}" --out-link "$GCROOTS/$ID"\
                --store "$STORE_DEFAULT" \
                --expr  "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$props\";})")
 
@@ -93,7 +111,7 @@ build_container() {
   rsync -a --exclude=temproots "$STORE_DEFAULT/nix/var/nix/" "$TMP_DIR/merged/nix/var/nix/"
 
   local props="builtins.readFile $PARAMETERS_FILE"
-  local cmd=(nix build --print-out-paths "${ARGS[@]}" \
+  local cmd=(nix build --no-link --print-out-paths "${ARGS[@]}" \
                --store "$TMP_DIR/merged" \
                --expr  "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = $props;})")
 
@@ -110,6 +128,8 @@ build_container() {
   cp "$PARAMETERS_FILE" "$ROOT_FUTUR/parameters.json"
 }
 
+lock_acquire
+uid_root
 prepare
 build_store
 trap cleanup EXIT

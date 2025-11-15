@@ -7,7 +7,6 @@ usage() {
   echo "Usage : nixunits delete <container id> [options]"
   echo "Available options:"
   echo "  -f          force ?"
-  echo "  -g          garbage collector ?"
   echo "  -r          recursive ?"
   echo "  -h, --help"
   echo
@@ -23,16 +22,19 @@ shift
 
 FORCE=false
 RECURSIVE=false
-GC=false
 
-while getopts "fghr" opt; do
+uid_del() {
+  if grep -q "^$ID " "$UID_INV"; then
+    sed -i "s/^$ID /__FREE__ /" "$UID_INV"
+  fi
+}
+
+while getopts "fhr" opt; do
   case $opt in
     f)
       FORCE=true;;
     r)
       RECURSIVE=$OPTARG;;
-    g)
-      GC=$OPTARG;;
     h)
       usage;;
     \?)
@@ -58,10 +60,12 @@ fi
 _NIXUNITS_PATH_SED_/bin/disable.sh "$ID"
 systemctl stop "nixunits@$ID.service"
 
+lock_acquire
 if $RECURSIVE
 then
   # set -ex
   rm -fr "$CONTAINER_DIR"
+  uid_del
 else
   # set -ex
   find "$CONTAINER_DIR" -maxdepth 1 -type f,l | while read -r file
@@ -71,10 +75,7 @@ else
   if [ "$(find "$CONTAINER_DIR" |wc -l)" = 2 ];then
     rmdir "$(unit_root "$ID")"
     rmdir "$CONTAINER_DIR"
+    uid_del
   fi
 fi
-
-if $GC
-then
-  nix-store --gc
-fi
+lock_release

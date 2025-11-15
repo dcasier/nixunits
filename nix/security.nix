@@ -71,7 +71,8 @@ in {
   in [
     "--no-new-privileges=yes"
     "--private-users=pick"
-    "--private-users-ownership=auto"
+    "--private-users-ownership=chown"
+    # "--private-users-ownership=auto" # Incompatible with bind dir
   ]# TODO remove private-users if netns
   ++ map (cap: "--drop-capability=${cap}") CAPS
   ++ map (cap: "--capability=${cap}") caps_allow;

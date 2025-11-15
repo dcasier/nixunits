@@ -2,10 +2,14 @@
 set -eo pipefail
 trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 
+ID=$1
 # shellcheck disable=SC1091
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
 export PATH=$PATH:_OPENVSWITCH_PATH_SED_/bin
+UNIT_DIR=$(unit_dir "$ID")
+UID_ROOT=$(uid_root "$ID")
+MAX_UID=$(( UID_ROOT + 65535 ))
 
 interface_ovs_create() {
   log_msg "Create OVS interface - $INTERFACE - "
@@ -15,6 +19,33 @@ interface_ovs_create() {
     fi
     ovs_port_add "$INTERFACE"
   fi
+}
+
+owner_fix() {
+    local dst="$1" src="$2"
+    local current="/"
+    local IFS='/'
+    local uid
+    local target
+
+    read -ra parts <<< "$dst"
+    for i in "${!parts[@]}"; do
+        [[ -z "${parts[$i]}" ]] && continue
+        current="$current${parts[$i]}"
+
+        local target="$UNIT_DIR/root$current"
+        if [[ $i -eq $((${#parts[@]} - 1)) ]]; then
+          target="$src"
+          mkdir -p "$target"
+        fi
+        uid=$(stat -c '%u' "$target" 2>/dev/null || echo -1)
+        if (( uid < UID_ROOT || uid > MAX_UID )); then
+            log_msg "chown $UID_ROOT:$UID_ROOT $target"
+            chown "$UID_ROOT":"$UID_ROOT" "$target"
+        fi
+
+        current="$current/"
+    done
 }
 
 ###############################################################################
@@ -28,6 +59,24 @@ for iface in $(interfaces_list); do
   if [ -n "$OVS_BRIDGE" ]; then
     interface_ovs_create
   fi
+done
+
+for arg_ in $NSPAWN_ARGS; do
+    case "$arg_" in
+        --bind=*)
+            val="${arg_#--bind=}"
+
+            if [[ "$val" == *:* ]]; then
+                src="${val%%:*}"
+                dst="${val#*:}"
+            else
+                src="$val"
+                dst="$val"
+            fi
+
+            owner_fix "$dst" "$src"
+            ;;
+    esac
 done
 
 log_msg "### nixunits END PRE ###"

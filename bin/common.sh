@@ -1,9 +1,16 @@
-_VAR="/var/lib/nixunits/containers"
-
 PATH="__AWK_BIN_SED__:__FIND_BIN_SED__:__GREP_BIN_SED__:__INOTIFY_BIN_SED__:__PSTREE_BIN_SED__:__SYSTEMD_BIN_SED__:/run/current-system/sw/bin/:$PATH"
 export PATH
 
-unit_dir() { echo "$_VAR/$1"; }
+PATH_CTX="/var/lib/nixunits"
+PATH_CONTAINER="/var/lib/nixunits/containers"
+LOCKFILE="${PATH_CTX}/.lock"
+UID_INV="$PATH_CTX/uidmap"
+export PATH_CTX LOCKFILE UID_INV
+
+unit_dir() { echo "$PATH_CONTAINER/$1"; }
+uid_root() {
+  echo $(($(awk -v id="$1" '$1==id {print $2}' "$UID_INV") * 65536))
+}
 
 unit_conf() { echo "$(unit_dir "$1")/unit.conf"; }
 unit_parameters() { echo "$(unit_dir "$1")/parameters.json"; }
@@ -63,6 +70,16 @@ in_nixos_failed() {
 ip6_crc32() { echo "$(_ip6_crc32 "$1"):2"; }
 
 ip6_crc32_host() { echo "$(_ip6_crc32 "$1"):1"; }
+
+lock_acquire() {
+    while ! mkdir "$LOCKFILE" 2>/dev/null; do
+        sleep 0.1
+    done
+}
+
+lock_release() {
+    rmdir "$LOCKFILE"
+}
 
 log() { echo "$(unit_dir "$1")/unit.log"; }
 
