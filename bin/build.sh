@@ -49,6 +49,8 @@ in_nixos_failed "$ID"
 
 STORE_DEFAULT="/var/lib/nixunits/store/default/root"
 CONTAINER_DIR=$(unit_dir "$ID")
+mkdir -p "$CONTAINER_DIR"
+chmod 2750 "$CONTAINER_DIR"
 
 TMP_DIR="$CONTAINER_DIR/tmp"
 ROOT_FUTUR="$TMP_DIR/root_futur"
@@ -60,7 +62,7 @@ if [[ "$CONTAINER_DIR" != *var*nixunits* ]]; then
 fi
 
 cleanup() {
-  umount "$TMP_DIR/merged/var/nix" 2>/dev/null || true
+  umount "$TMP_DIR/merged" 2>/dev/null || true
   umount -l "$TMP_DIR/merged" 2>/dev/null || true
 }
 
@@ -86,8 +88,9 @@ build_store() {
 build_container() {
   echo "Build container $ID"
   mount -t overlay overlay -o "lowerdir=$STORE_DEFAULT,upperdir=$ROOT_FUTUR,workdir=$TMP_DIR/work" "$TMP_DIR/merged"
-  mkdir -p "$TMP_DIR/merged/var/nix"
-  mount -t tmpfs tmpfs "$TMP_DIR/merged/var/nix"
+  mkdir -p "$TMP_DIR/merged/nix/var/nix"
+  mount -t tmpfs tmpfs "$TMP_DIR/merged/nix/var/nix"
+  rsync -a --exclude=temproots "$STORE_DEFAULT/nix/var/nix/" "$TMP_DIR/merged/nix/var/nix/"
 
   local props="builtins.readFile $PARAMETERS_FILE"
   local cmd=(nix build --print-out-paths "${ARGS[@]}" \
@@ -96,6 +99,7 @@ build_container() {
 
   [ "$DEBUG" = true ] && echo "${cmd[@]}"
   RESULT_PATH="$("${cmd[@]}")"
+
 
   conf_path="$ROOT_FUTUR/$RESULT_PATH/etc/nixunits/$ID.conf"
   conf_target=$(readlink -f "$conf_path") || {
@@ -113,8 +117,6 @@ build_container
 cleanup
 trap - EXIT
 touch "$ROOT_FUTUR/.complete"
-
-echo "${STARTS_ARGS[@]}"
 
 if [ ${#STARTS_ARGS[@]} -gt 0 ]; then
   _NIXUNITS_PATH_SED_/bin/start.sh "$ID" "${STARTS_ARGS[@]}"

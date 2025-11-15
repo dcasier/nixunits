@@ -52,7 +52,7 @@ switch() {
     exit 1
   fi
 
-  mkdir -p "$ROOT_OLD"
+  mkdir -p "$ROOT/usr" "$ROOT_OLD"
   test -d "$ROOT/nix" && mv "$ROOT/nix" "$ROOT_OLD/"
   mv "$ROOT_FUTUR/nix" "$ROOT/"
   test -f "$CONTAINER_DIR/unit.conf" && rm "$CONTAINER_DIR/unit.conf"
