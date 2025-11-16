@@ -70,7 +70,8 @@ cleanup() {
 
 uid_root() {
     if [ ! -f "$UID_INV" ];then
-        echo "$ID 1" > "$UID_INV"
+        # between 524288 and 1878982656
+        echo "$ID 1024" > "$UID_INV"
     fi
 
     UID_SHIFT_INDEX=$(awk -v id="$ID" '$1==id {print $2}' "$UID_INV")

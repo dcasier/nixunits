@@ -36,11 +36,11 @@ owner_fix() {
         local target="$UNIT_DIR/root$current"
         if [[ $i -eq $((${#parts[@]} - 1)) ]]; then
           target="$src"
-          mkdir -p "$target"
         fi
         uid=$(stat -c '%u' "$target" 2>/dev/null || echo -1)
         if (( uid < UID_ROOT || uid > MAX_UID )); then
             log_msg "chown $UID_ROOT:$UID_ROOT $target"
+            mkdir -p "$target"
             chown "$UID_ROOT":"$UID_ROOT" "$target"
         fi
 
