@@ -94,7 +94,6 @@ log_block_msg() {
 }
 
 ovs_port_exists() {
-  ovs-vsctl --if-exists get Interface "$1" ifindex
     local iface=$1
     local fix=${2:-false}
     local ifindex
