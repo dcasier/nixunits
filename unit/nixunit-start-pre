@@ -11,13 +11,18 @@ UNIT_DIR=$(unit_dir "$ID")
 UID_ROOT=$(uid_root "$ID")
 MAX_UID=$(( UID_ROOT + 65535 ))
 
-interface_ovs_create() {
+interface_check() {
+  interface_env "$1"
   log_msg "Create OVS interface - $INTERFACE - "
-  if ! interface_exists "$INTERFACE"; then
+  if ! interface_exists "$INTERFACE" true; then
     if ovs_port_exists "$INTERFACE"; then
-      ovs_port_del "$INTERFACE"
+      if [ -n "$OVS_BRIDGE" ]; then
+        ovs_port_del "$INTERFACE"
+      fi
     fi
-    ovs_port_add "$INTERFACE"
+    if [ -n "$OVS_BRIDGE" ]; then
+      ovs_port_add "$INTERFACE"
+    fi
   fi
 }
 
@@ -55,10 +60,7 @@ owner_fix() {
 log_block_msg "### nixunits START PRE"
 
 for iface in $(interfaces_list); do
-  interface_env "$iface"
-  if [ -n "$OVS_BRIDGE" ]; then
-    interface_ovs_create
-  fi
+  interface_check "$iface"
 done
 
 for arg_ in $NSPAWN_ARGS; do

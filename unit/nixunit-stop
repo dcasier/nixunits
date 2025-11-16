@@ -3,10 +3,13 @@ set -eo pipefail
 
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
-interface_ovs_delete() {
-  log_msg "Delete OVS interface - $INTERFACE - "
-  if ovs_port_exists "$INTERFACE"; then
-    ovs_port_del "$INTERFACE"
+interface_clean() {
+  interface_env "$1"
+  if [ -n "$OVS_BRIDGE" ]; then
+    log_msg "Delete OVS interface - $INTERFACE - "
+    if ovs_port_exists "$INTERFACE"; then
+      ovs_port_del "$INTERFACE"
+    fi
   fi
 }
 
@@ -55,10 +58,7 @@ fi
 systemctl reset-failed "nixunits-network@${NAME}.service" "machine-${NAME}.scope" 2>/dev/null || true
 
 for iface in $(interfaces_list); do
-  interface_env "$iface"
-  if [ -n "$OVS_BRIDGE" ]; then
-    interface_ovs_delete
-  fi
+  interface_clean "$iface"
 done
 
 log_block_msg "### nixunits STOP END"

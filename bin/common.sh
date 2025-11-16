@@ -94,7 +94,25 @@ log_block_msg() {
 }
 
 ovs_port_exists() {
-  ovs-vsctl --if-exists get Interface "$1" name &>/dev/null
+  ovs-vsctl --if-exists get Interface "$1" ifindex
+    local iface=$1
+    local fix=${2:-false}
+    local ifindex
+
+    ifindex=$(ovs-vsctl --if-exists get Interface "$iface" ifindex)
+
+    if [ "${ifindex:-0}" -eq 0 ] && [ "$fix" = "true" ]; then
+      ovs-vsctl set Interface "$iface" type=dummy
+      ovs-vsctl set Interface "$iface" type=internal
+
+      for _ in 1 2 3 4 5; do
+        ifindex=$(ovs-vsctl --if-exists get Interface "$iface" ifindex)
+        [ "${ifindex:-0}" -ne 0 ] && break
+        sleep 0.1
+      done
+    fi
+
+    [ -n "$ifindex" ]
 }
 
 ovs_port_del() {
