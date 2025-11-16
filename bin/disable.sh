@@ -41,7 +41,7 @@ else
 fi
 
 test -f "${SYSTEMD_PATH}/multi-user.target.wants/$_unit" && rm "${SYSTEMD_PATH}/multi-user.target.wants/$_unit" || true
-test -f "${SYSTEMD_PATH}/machine-${ID}.scope.wants/$_unit_net" && rm "${SYSTEMD_PATH}/machine-${ID}.scope.wants/$_unit_net" || true
-test -d "${SYSTEMD_PATH}/machine-${ID}.scope.wants" && rmdir "${SYSTEMD_PATH}/machine-${ID}.scope.wants" || true
+test -f "${SYSTEMD_PATH}/machine-${id}.scope.wants/$_unit_net" && rm "${SYSTEMD_PATH}/machine-${id}.scope.wants/$_unit_net" || true
+test -d "${SYSTEMD_PATH}/machine-${id}.scope.wants" && rmdir "${SYSTEMD_PATH}/machine-${id}.scope.wants" || true
 systemctl daemon-reload
 
