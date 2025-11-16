@@ -49,11 +49,6 @@ _NIXUNITS_PATH_SED_/bin/enable.sh "$ID"
 
 switch() {
   echo "Switch"
-  if [ ! -f "$ROOT_FUTUR/.complete" ]; then
-    echo "INTERNAL ERROR : updated root not ready"
-    exit 1
-  fi
-
   mkdir -p "$ROOT/usr" "$ROOT_OLD"
   chown -R $UID_ROOT:$UID_ROOT "$ROOT"
   chown -R $UID_ROOT:$UID_ROOT "$ROOT/usr"
@@ -75,7 +70,7 @@ if [ "$STARTED" = true ] && [ "$RESTART" = true ]; then
 fi
 
 if [ "$STARTED" != true ] || [ "$RESTART" = true ];then
-  if [ "$SWITCH" = true ]; then
+  if [ "$SWITCH" = true ] && [ -f "$ROOT_FUTUR/.complete" ]; then
     lock_acquire
     switch
     lock_release
