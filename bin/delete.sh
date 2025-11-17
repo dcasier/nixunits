@@ -23,6 +23,10 @@ shift
 FORCE=false
 RECURSIVE=false
 
+cleanup() {
+  lock_release
+}
+
 uid_del() {
   if grep -q "^$ID " "$UID_INV"; then
     sed -i "s/^$ID /__FREE__ /" "$UID_INV"
@@ -61,6 +65,7 @@ _NIXUNITS_PATH_SED_/bin/disable.sh "$ID"
 systemctl stop "nixunits@$ID.service"
 
 lock_acquire
+trap cleanup EXIT
 if $RECURSIVE
 then
   # set -ex
@@ -78,4 +83,3 @@ else
     uid_del
   fi
 fi
-lock_release

@@ -72,13 +72,18 @@ ip6_crc32() { echo "$(_ip6_crc32 "$1"):2"; }
 ip6_crc32_host() { echo "$(_ip6_crc32 "$1"):1"; }
 
 lock_acquire() {
-    while ! mkdir "$LOCKFILE" 2>/dev/null; do
+    while ! ln -s "$$" "$LOCKFILE" 2>/dev/null; do
+        pid=$(readlink "$LOCKFILE" 2>/dev/null)
+        if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
+            rm -f "$LOCKFILE"
+        fi
         sleep 0.1
     done
 }
 
 lock_release() {
-    rmdir "$LOCKFILE"
+    pid=$(readlink "$LOCKFILE" 2>/dev/null)
+    [ "$pid" = "$$" ] && rm -f "$LOCKFILE"
 }
 
 log() { echo "$(unit_dir "$1")/unit.log"; }

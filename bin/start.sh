@@ -47,6 +47,10 @@ done
 
 _NIXUNITS_PATH_SED_/bin/enable.sh "$ID"
 
+cleanup() {
+  lock_release
+}
+
 switch() {
   echo "Switch"
   mkdir -p "$ROOT/usr" "$ROOT_OLD"
@@ -73,7 +77,7 @@ if [ "$STARTED" != true ] || [ "$RESTART" = true ];then
   if [ "$SWITCH" = true ] && [ -f "$ROOT_FUTUR/.complete" ]; then
     lock_acquire
     switch
-    lock_release
+    trap cleanup EXIT
   fi
 fi
 
