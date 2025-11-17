@@ -17,11 +17,11 @@ usage() {
 
 [[ "$1" =~ ^(-h|--help)$ ]] && usage 0
 test $# -eq 0 && usage 1
-ID=$1
+id=$1
 shift
-echo "Start $ID"
+echo "Start $id"
 
-CONTAINER_DIR=$(unit_dir "$ID")
+CONTAINER_DIR=$(unit_dir "$id")
 if [[ "$CONTAINER_DIR" != *var*nixunits* ]]; then
     echo "INTERNAL ERROR : invalid value for CONTAINER_DIR ${CONTAINER_DIR}" >&2
     exit 1
@@ -31,7 +31,7 @@ ROOT="$CONTAINER_DIR/root"
 TMP_DIR="$CONTAINER_DIR/tmp"
 ROOT_FUTUR="$TMP_DIR/root_futur"
 ROOT_OLD="$TMP_DIR/root_old"
-UID_ROOT=$(uid_root "$ID")
+UID_ROOT=$(uid_root "$id")
 
 RESTART=false
 SWITCH=false
@@ -45,7 +45,7 @@ while getopts "rsh" opt; do
   esac
 done
 
-_NIXUNITS_PATH_SED_/bin/enable.sh "$ID"
+_NIXUNITS_PATH_SED_/bin/enable.sh "$id"
 
 cleanup() {
   lock_release
@@ -60,12 +60,12 @@ switch() {
   mv "$ROOT_FUTUR/nix" "$ROOT/"
   test -f "$CONTAINER_DIR/unit.conf" && rm "$CONTAINER_DIR/unit.conf"
   mv "$ROOT_FUTUR/unit.conf" "$CONTAINER_DIR/unit.conf"
-  cp "$ROOT_FUTUR/parameters.json" "$(unit_parameters "$ID")"
+  cp "$ROOT_FUTUR/parameters.json" "$(unit_parameters "$id")"
   rm "$ROOT_FUTUR/.complete"
 }
 
-_unit="nixunits@${ID}.service"
-_unit_net="nixunits-network@${ID}.service"
+_unit="nixunits@${id}.service"
+_unit_net="nixunits-network@${id}.service"
 
 STARTED=$(systemctl show "$_unit" --no-pager |grep ^SubState=running >/dev/null && echo true || echo false)
 

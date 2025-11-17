@@ -43,13 +43,13 @@ if [ -z "${NIX_FILE:-}" ] || [ -z "${PARAMETERS_FILE:-}" ]; then
     usage 1
 fi
 
-ID=$(_JQ_SED_ -r '.id' "$PARAMETERS_FILE")
+id=$(_JQ_SED_ -r '.id' "$PARAMETERS_FILE")
 
-in_nixos_failed "$ID"
+in_nixos_failed "$id"
 
 GCROOTS="/var/lib/nixunits/gcroots"
 STORE_DEFAULT="$PATH_CTX/store/default/root"
-CONTAINER_DIR=$(unit_dir "$ID")
+CONTAINER_DIR=$(unit_dir "$id")
 mkdir -p "$CONTAINER_DIR"
 chmod 2750 "$CONTAINER_DIR"
 
@@ -71,18 +71,18 @@ cleanup() {
 uid_root() {
     if [ ! -f "$UID_INV" ];then
         # between 524288 and 1878982656
-        echo "$ID 1024" > "$UID_INV"
+        echo "$id 1024" > "$UID_INV"
     fi
 
-    UID_SHIFT_INDEX=$(awk -v id="$ID" '$1==id {print $2}' "$UID_INV")
+    UID_SHIFT_INDEX=$(awk -v id="$id" '$1==id {print $2}' "$UID_INV")
     if [ -z "$UID_SHIFT_INDEX" ]; then
       UID_SHIFT_INDEX=$(awk '/^__FREE__/ {print $2; exit}' "$UID_INV")
       if [ -n "$UID_SHIFT_INDEX" ]; then
-          sed -i "0,/^__FREE__/s//${ID} ${UID_SHIFT_INDEX}/" "$UID_INV"
+          sed -i "0,/^__FREE__/s//${id} ${UID_SHIFT_INDEX}/" "$UID_INV"
       else
         last_uid=$(awk '{print $2}' "$UID_INV" | tail -1)
         UID_SHIFT_INDEX=$((last_uid + 1))
-        echo "$ID $UID_SHIFT_INDEX" >> "$UID_INV"
+        echo "$id $UID_SHIFT_INDEX" >> "$UID_INV"
       fi
     fi
 }
@@ -94,9 +94,9 @@ prepare() {
 }
 
 build_store() {
-  echo "Build store for $ID"
+  echo "Build store for $id"
   local props='{\"id\": \"dummy\"}'
-  local cmd=(nix build "${ARGS[@]}" --out-link "$GCROOTS/$ID"\
+  local cmd=(nix build "${ARGS[@]}" --out-link "$GCROOTS/$id"\
                --store "$STORE_DEFAULT" \
                --expr  "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$props\";})")
 
@@ -105,7 +105,7 @@ build_store() {
 }
 
 build_container() {
-  echo "Build container $ID"
+  echo "Build container $id"
   mount -t overlay overlay -o "lowerdir=$STORE_DEFAULT,upperdir=$ROOT_FUTUR,workdir=$TMP_DIR/work" "$TMP_DIR/merged"
   mkdir -p "$TMP_DIR/merged/nix/var/nix"
   mount -t tmpfs tmpfs "$TMP_DIR/merged/nix/var/nix"
@@ -120,7 +120,7 @@ build_container() {
   RESULT_PATH="$("${cmd[@]}")"
 
 
-  conf_path="$ROOT_FUTUR/$RESULT_PATH/etc/nixunits/$ID.conf"
+  conf_path="$ROOT_FUTUR/$RESULT_PATH/etc/nixunits/$id.conf"
   conf_target=$(readlink -f "$conf_path") || {
     echo "INTERNAL ERROR : Failed get $conf_path" >&2
     exit 1
@@ -140,5 +140,5 @@ trap - EXIT
 touch "$ROOT_FUTUR/.complete"
 
 if [ ${#STARTS_ARGS[@]} -gt 0 ]; then
-  _NIXUNITS_PATH_SED_/bin/start.sh "$ID" "${STARTS_ARGS[@]}"
+  _NIXUNITS_PATH_SED_/bin/start.sh "$id" "${STARTS_ARGS[@]}"
 fi

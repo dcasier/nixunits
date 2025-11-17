@@ -79,7 +79,7 @@ then
     DECLARED_IN_NIXOS=$(in_nixos "$id" && echo "true" || echo "false")
     if [ "$PARAMETERS_FILE" != "" ]
     then
-      diff "PARAMETERS_FILE" "$(unit_parameters "$ID")" >/dev/null && NIX_SAME=true
+      diff "$PARAMETERS_FILE" "$(unit_parameters "$id")" >/dev/null && NIX_SAME=true
     fi
   else
     CONF_EXIST="false"

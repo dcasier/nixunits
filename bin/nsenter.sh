@@ -3,7 +3,7 @@ set -e
 
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
-ID="$1"
+id="$1"
 shift
 
 NET=false
@@ -26,12 +26,12 @@ shift $((OPTIND - 1))
 
 if [ "${NET:-false}" = true ]
 then
-  _args=$(shell_netns "$ID")
+  _args=$(shell_netns "$id")
 else
-  _args=$(shell_args "$ID")
+  _args=$(shell_args "$id")
 fi
 
-test $QUIET == "false" && echo "[ Container ($(pid_leader "$ID")) ]" >&2
+test $QUIET == "false" && echo "[ Container ($(pid_leader "$id")) ]" >&2
 if test -z "$*"
 then
   # shellcheck disable=SC2086

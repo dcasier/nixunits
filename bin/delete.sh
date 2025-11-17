@@ -17,7 +17,7 @@ usage() {
 
 [[ "$1" =~ ^(-h|--help)$ ]] && usage 0
 test $# -eq 0 && usage 1
-ID=$1
+id=$1
 shift
 
 FORCE=false
@@ -28,8 +28,8 @@ cleanup() {
 }
 
 uid_del() {
-  if grep -q "^$ID " "$UID_INV"; then
-    sed -i "s/^$ID /__FREE__ /" "$UID_INV"
+  if grep -q "^$id " "$UID_INV"; then
+    sed -i "s/^$id /__FREE__ /" "$UID_INV"
   fi
 }
 
@@ -47,13 +47,13 @@ while getopts "fhr" opt; do
   esac
 done
 
-[ -z "$ID" ] && echo "Container id missed" && exit 1
+[ -z "$id" ] && echo "Container id missed" && exit 1
 
-CONTAINER_DIR=$(unit_dir "$ID")
+CONTAINER_DIR=$(unit_dir "$id")
 
 if ! $FORCE
 then
-  in_nixos_failed "$ID"
+  in_nixos_failed "$id"
   read -rn 1 -p "Delete $CONTAINER_DIR ? [y/N] : " AGREE
   if ! expr "$AGREE" : '[yY]' >/dev/null
   then
@@ -61,8 +61,8 @@ then
   fi
 fi
 
-_NIXUNITS_PATH_SED_/bin/disable.sh "$ID"
-systemctl stop "nixunits@$ID.service"
+_NIXUNITS_PATH_SED_/bin/disable.sh "$id"
+systemctl stop "nixunits@$id.service"
 
 lock_acquire
 trap cleanup EXIT
@@ -78,7 +78,7 @@ else
     rm "$file"
   done
   if [ "$(find "$CONTAINER_DIR" |wc -l)" = 2 ];then
-    rmdir "$(unit_root "$ID")"
+    rmdir "$(unit_root "$id")"
     rmdir "$CONTAINER_DIR"
     uid_del
   fi
