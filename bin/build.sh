@@ -175,7 +175,7 @@ status=$(echo "$S" | jq -r .status)
 
 [ "$status" = "initial" ] && FORCE=true
 
-if [ "$FORCE" = true ] && [ -e "$GCROOT_PATH" ] && [ -e "$(readlink -f "$GCROOT_PATH")" ];then
+if [ "$FORCE" = true ] || [ ! -L "$GCROOT_PATH" ];then
   lock_acquire
   trap lock_release EXIT
   uid_alloc
@@ -184,7 +184,7 @@ if [ "$FORCE" = true ] && [ -e "$GCROOT_PATH" ] && [ -e "$(readlink -f "$GCROOT_
 else
   echo "Store unchanged"
 fi
-if [ "$FORCE" = true ] || [ -f "$CONTAINER_META" ] && [ "$(cat "$CONTAINER_META")" = "$UNIT_HASH" ];then
+if [ "$FORCE" = true ] || [ ! -f "$CONTAINER_META" ] || [ ! "$(cat "$CONTAINER_META")" = "$UNIT_HASH" ];then
   lock_acquire "$CONTAINER_LOCK"
   trap cleanup EXIT
   build_container

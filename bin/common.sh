@@ -32,8 +32,11 @@ container_env() {
 }
 
 hash_ctx() {
-  FLAKE_REV=$(nix flake metadata "_NIXUNITS_PATH_SED_" --json | jq -r '.revision // .fingerprint // "dirty"')
-  echo "${SYSTEM}-${FLAKE_REV}"
+  NIXPKGS_REV="$(
+    nix flake metadata "_NIXUNITS_PATH_SED_" --json \
+    | jq -r '.locks.nodes.nixpkgs.locked.rev'
+  )"
+  echo "${SYSTEM}-${NIXPKGS_REV}"
 }
 
 hash_with() {
