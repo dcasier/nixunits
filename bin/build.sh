@@ -40,6 +40,7 @@ while getopts "defn:j:hsr" opt; do
   esac
 done
 shift "$((OPTIND-1))"
+mkdir -p "$C_FUTUR"
 
 if [ -n "$NIX_FILE" ]; then
   if is_url "$NIX_FILE"; then
@@ -47,14 +48,22 @@ if [ -n "$NIX_FILE" ]; then
   else
     cp "$NIX_FILE" "$C_FUTUR_NIX"
   fi
-elif [ -f "$CONTAINER_NIX" ]; then
+elif [ ! -f "$C_FUTUR_NIX" ] && [ -f "$CONTAINER_NIX" ]; then
   cp "$CONTAINER_NIX" "$C_FUTUR_NIX"
 fi
 
+if [ -n "$PARAMS_FILE" ]; then
+  if is_url "$PARAMS_FILE"; then
+    curl --fail -L "$PARAMS_FILE" -o "$C_FUTUR_ARGS"
+  else
+    cp "$PARAMS_FILE" "$C_FUTUR_ARGS"
+  fi
+elif [ ! -f "$C_FUTUR_ARGS" ] && [ -f "$CONTAINER_ARGS" ]; then
+  cp "$CONTAINER_ARGS" "$C_FUTUR_ARGS"
+fi
 
 
-if [ ! -f "$C_FUTUR_NIX" ] || [ -z "${PARAMS_FILE:-}" ]; then
-    echo "Args missing" >&2
+if [ ! -f "$C_FUTUR_NIX" ] || [ ! -f "$C_FUTUR_ARGS" ]; then
     usage 1
 fi
 
@@ -120,7 +129,7 @@ build_container() {
     mv "$C_FUTUR_OK" "${C_FUTUR_OK}_bkp"
   fi
   rm -rf "$C_TMP"
-  mkdir -p "$C_FUTUR" "$C_TMP/work" "$C_TMP/merged" "$C_TMP/logs"
+  mkdir -p "$C_TMP/work" "$C_TMP/merged" "$C_TMP/logs"
 
   mount -t overlay overlay -o "lowerdir=$STORE_CONTAINERS,upperdir=$C_FUTUR,workdir=$C_TMP/work" "$C_TMP/merged"
   mkdir -p "$C_TMP/merged/nix/var/nix"
