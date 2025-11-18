@@ -4,10 +4,11 @@ set -euo pipefail
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
 usage() {
-  echo "Usage : nixunits build [options]"
+  echo "Usage : nixunits build -i <ID> OR -j <parameters file> [options]"
   echo "Available options:"
   echo "  -d  debug (show-trace)"
   echo "  -f  force (build)"
+  echo "  -i  container ID"
   echo "  -j  JSON parameters file"
   echo "  -n  Nix config file"
   echo "  -h  help"
@@ -22,24 +23,37 @@ usage() {
 test $# -eq 0 && usage 1
 [[ "$1" =~ ^(-h|--help)$ ]] && usage 0
 
+id=""
 DEBUG=false
 FORCE=false
 ARGS=(--impure)
 STARTS_ARGS=()
 
-while getopts "dfj:n:hsr" opt; do
+while getopts "dfi:j:n:hsr" opt; do
   case $opt in
     d) DEBUG=true; ARGS+=("--show-trace");;
     f) FORCE=true;;
+    i) id=$OPTARG;;
+    j) PARAMS_FILE=$OPTARG;;
+    n) NIX_FILE=$OPTARG;;
     r) STARTS_ARGS+=(-s -r);;
     s) STARTS_ARGS+=(-s);;
-    n) NIX_FILE=$OPTARG;;
-    j) PARAMS_FILE=$OPTARG;;
     h) usage;;
     *) usage 1;;
   esac
 done
 shift "$((OPTIND-1))"
+
+if [ -n "$PARAMS_FILE" ]; then
+  if is_url "$PARAMS_FILE"; then
+    id="$(curl --fail -L "$PARAMS_FILE" | _JQ_SED_ -r '.id')"
+  else
+    id=$(_JQ_SED_ -r '.id' "$PARAMS_FILE")
+  fi
+fi
+
+in_nixos_failed "$id"
+container_env "$id"
 
 if [ -n "$PARAMS_FILE" ]; then
   if is_url "$PARAMS_FILE"; then
@@ -64,10 +78,6 @@ fi
 if [ ! -f "$C_FUTUR_NIX" ] || [ ! -f "$C_FUTUR_ARGS" ]; then
     usage 1
 fi
-
-id=$(_JQ_SED_ -r '.id' "$C_FUTUR_ARGS")
-in_nixos_failed "$id"
-container_env "$id"
 
 mkdir -p "$C_FUTUR"
 
