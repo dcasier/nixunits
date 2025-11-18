@@ -8,8 +8,8 @@ usage() {
   echo "Available options:"
   echo "  -d  debug (show-trace)"
   echo "  -f  force (build)"
-  echo "  -n  Nix config file"
   echo "  -j  JSON parameters file"
+  echo "  -n  Nix config file"
   echo "  -h  help"
   echo "  -r  restart ?"
   echo "  -s  start ?"
@@ -27,7 +27,7 @@ FORCE=false
 ARGS=(--impure)
 STARTS_ARGS=()
 
-while getopts "defn:j:hsr" opt; do
+while getopts "dfj:n:hsr" opt; do
   case $opt in
     d) DEBUG=true; ARGS+=("--show-trace");;
     f) FORCE=true;;
@@ -40,17 +40,6 @@ while getopts "defn:j:hsr" opt; do
   esac
 done
 shift "$((OPTIND-1))"
-mkdir -p "$C_FUTUR"
-
-if [ -n "$NIX_FILE" ]; then
-  if is_url "$NIX_FILE"; then
-    curl --fail -L "$NIX_FILE" -o "$C_FUTUR_NIX"
-  else
-    cp "$NIX_FILE" "$C_FUTUR_NIX"
-  fi
-elif [ ! -f "$C_FUTUR_NIX" ] && [ -f "$CONTAINER_NIX" ]; then
-  cp "$CONTAINER_NIX" "$C_FUTUR_NIX"
-fi
 
 if [ -n "$PARAMS_FILE" ]; then
   if is_url "$PARAMS_FILE"; then
@@ -62,14 +51,25 @@ elif [ ! -f "$C_FUTUR_ARGS" ] && [ -f "$CONTAINER_ARGS" ]; then
   cp "$CONTAINER_ARGS" "$C_FUTUR_ARGS"
 fi
 
+if [ -n "$NIX_FILE" ]; then
+  if is_url "$NIX_FILE"; then
+    curl --fail -L "$NIX_FILE" -o "$C_FUTUR_NIX"
+  else
+    cp "$NIX_FILE" "$C_FUTUR_NIX"
+  fi
+elif [ ! -f "$C_FUTUR_NIX" ] && [ -f "$CONTAINER_NIX" ]; then
+  cp "$CONTAINER_NIX" "$C_FUTUR_NIX"
+fi
 
 if [ ! -f "$C_FUTUR_NIX" ] || [ ! -f "$C_FUTUR_ARGS" ]; then
     usage 1
 fi
 
-id=$(_JQ_SED_ -r '.id' "$PARAMS_FILE")
+id=$(_JQ_SED_ -r '.id' "$C_FUTUR_ARGS")
 in_nixos_failed "$id"
 container_env "$id"
+
+mkdir -p "$C_FUTUR"
 
 if [[ "$CONTAINER_DIR" != *var*nixunits* ]]; then
     echo "INTERNAL ERROR : invalid value for CONTAINER_DIR ${CONTAINER_DIR}" >&2
