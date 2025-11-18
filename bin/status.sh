@@ -21,7 +21,7 @@ shift
 
 NIX_FILE=""
 PARAMS_FILE=""
-while getopts "h" opt; do
+while getopts "j:n:h" opt; do
   case $opt in
     j) PARAMS_FILE=$OPTARG;;
     n) NIX_FILE=$OPTARG;;
