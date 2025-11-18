@@ -23,10 +23,12 @@ usage() {
 test $# -eq 0 && usage 1
 [[ "$1" =~ ^(-h|--help)$ ]] && usage 0
 
-id=""
+ARGS=(--impure)
 DEBUG=false
 FORCE=false
-ARGS=(--impure)
+id=""
+NIX_FILE=""
+PARAMS_FILE=""
 STARTS_ARGS=()
 
 while getopts "dfi:j:n:hsr" opt; do
