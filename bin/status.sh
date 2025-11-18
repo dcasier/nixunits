@@ -86,8 +86,8 @@ printf '  "id": "%s",\n' "$id"
 printf '  "started": "%s",\n' "$STARTED"
 printf '  "status": "%s",\n' "$STATUS"
 printf '  "in_nixos": "%s",\n' "$IN_NIXOS"
-printf '  "need_container_build": %s' "$NEED_CONTAINER_BUILD"
-printf '  "need_store_build": %s' "$NEED_STORE_BUILD"
+printf '  "need_container_build": %s,\n' "$NEED_CONTAINER_BUILD"
+printf '  "need_store_build": %s,\n' "$NEED_STORE_BUILD"
 printf '  "need_switch": %s' "$NEED_SWITCH"
 
 if [ "$STARTED" = true ];then
