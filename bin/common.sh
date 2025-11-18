@@ -8,7 +8,9 @@ PATH_CONTAINERS="$PATH_NIXUNITS/containers"
 STORE_CONTAINERS="$PATH_NIXUNITS/store/default/root"
 SYSTEM=$(nix eval --impure --expr 'builtins.currentSystem' --raw)
 UID_INV="$PATH_NIXUNITS/uidmap"
-export GCROOTS_CONTAINERS LOCKFILE PATH_NIXUNITS STORE_CONTAINERS SYSTEM UID_INV
+NIXPKGS_REV="$(nix flake metadata "_NIXUNITS_PATH_SED_" --json |jq -r '.locks.nodes.nixpkgs.locked.rev')"
+ENV_HASH="${SYSTEM}-${NIXPKGS_REV}"
+export ENV_HASH GCROOTS_CONTAINERS LOCKFILE PATH_NIXUNITS STORE_CONTAINERS SYSTEM UID_INV
 
 container_env() {
   CONTAINER_DIR=$(unit_dir "$1")
@@ -29,14 +31,6 @@ container_env() {
         C_FUTUR_NIX CONTAINER_LOCK \
         CONTAINER_META CONTAINER_ROOT C_TMP \
         CONTAINER_OLD CONTAINER_NIX
-}
-
-hash_ctx() {
-  NIXPKGS_REV="$(
-    nix flake metadata "_NIXUNITS_PATH_SED_" --json \
-    | jq -r '.locks.nodes.nixpkgs.locked.rev'
-  )"
-  echo "${SYSTEM}-${NIXPKGS_REV}"
 }
 
 hash_with() {

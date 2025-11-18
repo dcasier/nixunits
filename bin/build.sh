@@ -89,7 +89,7 @@ if [ ! -f "$C_FUTUR_NIX" ] || [ ! -f "$C_FUTUR_ARGS" ]; then
     usage 1
 fi
 
-STORE_HASH=$(hash_with "$C_FUTUR_NIX" "$(hash_ctx)")
+STORE_HASH=$(hash_with "$C_FUTUR_NIX" "$ENV_HASH")
 GCROOT_PATH="$GCROOTS_CONTAINERS/$STORE_HASH"
 UNIT_HASH=$(hash_with "$C_FUTUR_ARGS" "$STORE_HASH")
 

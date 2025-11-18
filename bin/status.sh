@@ -68,15 +68,15 @@ if [ -f "$NIX_FILE" ];then
     NIX_ORI="$CONTAINER_NIX"
   fi
   if [ -f "$NIX_ORI" ]; then
-    FUT_HASH=$(hash_with "$NIX_FILE" "$(hash_ctx)")
-    ORI_HASH=$(hash_with "$NIX_ORI" "$(hash_ctx)")
-    NEED_STORE_BUILD=$([ "$FUT_HASH" != "$ORI_HASH" ] && echo true | echo false)
-    if [ "$NEED_STORE_BUILD" = "true" ];then
+    FUT_HASH=$(hash_with "$NIX_FILE" "$ENV_HASH")
+    ORI_HASH=$(hash_with "$NIX_ORI" "$ENV_HASH")
+    NEED_STORE_BUILD=$([ "$FUT_HASH" != "$ORI_HASH" ] && echo true || echo false)
+    if [ "$NEED_STORE_BUILD" = "true" ]; then
       NEED_CONTAINER_BUILD="true"
     elif [ -f "$PARAMS_FILE" ] && [ -f "$ARGS_ORI" ]; then
       FUT_HASH=$(hash_with "$PARAMS_FILE" "$FUT_HASH")
-      ORI_HASH=$(hash_with "$AGRS_ORI" "$ORI_HASH")
-      NEED_CONTAINER_BUILD=$([ "$FUT_HASH" != "$ORI_HASH" ] && echo true | echo false)
+      ORI_HASH=$(hash_with "$ARGS_ORI" "$ORI_HASH")
+      NEED_CONTAINER_BUILD=$([ "$FUT_HASH" != "$ORI_HASH" ] && echo true || echo false)
     fi
   fi
 fi
@@ -90,7 +90,7 @@ printf '  "need_container_build": %s,\n' "$NEED_CONTAINER_BUILD"
 printf '  "need_store_build": %s,\n' "$NEED_STORE_BUILD"
 printf '  "need_switch": %s' "$NEED_SWITCH"
 
-if [ "$STARTED" = true ];then
+if [ "$STARTED" = true ]; then
   printf ',\n  "os": "%s",\n' "$OS"
   printf '  "version": "%s",\n' "$VERSION"
   printf '  "addresses": ['
