@@ -54,10 +54,10 @@ printf '  "id": "%s",\n' "$id"
 printf '  "started": "%s",\n' "$STARTED"
 printf '  "status": "%s",\n' "$STATUS"
 printf '  "in_nixos": "%s",\n' "$IN_NIXOS"
-printf '  "need_switch": %s,\n' "$NEED_SWITCH"
+printf '  "need_switch": %s' "$NEED_SWITCH"
 
 if [ "$STARTED" = true ];then
-  printf '  "os": "%s",\n' "$OS"
+  printf ',\n  "os": "%s",\n' "$OS"
   printf '  "version": "%s",\n' "$VERSION"
   printf '  "addresses": ['
   first=true
