@@ -24,12 +24,21 @@ container_env() {
   CONTAINER_OLD="$C_TMP/root_old"
   CONTAINER_OK="$C_TMP/.complete"
   CONTAINER_ROOT="$CONTAINER_DIR/root"
-  CONTAINER_RID="$(uid_root "$1")"
   export CONTAINER_ARGS C_BUILD_OK CONTAINER_DIR CONTAINER_OK \
         C_FUTUR C_FUTUR_OK C_FUTUR_ARGS \
         C_FUTUR_NIX CONTAINER_LOCK \
         CONTAINER_META CONTAINER_ROOT C_TMP \
-        CONTAINER_OLD CONTAINER_RID CONTAINER_NIX
+        CONTAINER_OLD CONTAINER_NIX
+}
+
+hash_ctx() {
+  FLAKE_REV=$(nix flake metadata "_NIXUNITS_PATH_SED_" --json | jq -r '.revision // .fingerprint // "dirty"')
+  echo "${SYSTEM}-${FLAKE_REV}"
+}
+
+hash_with() {
+  hash_=$(sha1sum "$1" | cut -d' ' -f1)
+  echo "${2}-${hash_}" | sha1sum | cut -d' ' -f1
 }
 
 host_exec() {
@@ -202,7 +211,8 @@ shell_netns() {
 
 unit_dir() { echo "$PATH_CONTAINERS/$1"; }
 uid_root() {
-  echo $(($(awk -v id="$1" '$1==id {print $2}' "$UID_INV") * 65536))
+  skip="$(awk -v id="$1" '$1==id {print $2}' "$UID_INV")"
+  [ "$skip" != "" ] && echo $(( $skip * 65536))
 }
 
 unit_conf() { echo "$(unit_dir "$1")/unit.conf"; }

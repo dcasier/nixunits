@@ -27,6 +27,7 @@ _unit="nixunits@${id}.service"
 
 RESTART=false
 SWITCH=false
+CONTAINER_RID="$(uid_root "$id")"
 
 while getopts "rsh" opt; do
   case $opt in
@@ -46,7 +47,7 @@ switch() {
   test -d "$CONTAINER_ROOT/nix" && mv "$CONTAINER_ROOT/nix" "$CONTAINER_OLD/"
   test -f "$CONTAINER_DIR/unit.conf" && rm "$CONTAINER_DIR/unit.conf"
 
-  install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -m 2750 -d "$CONTAINER_ROOT"
+  install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -d "$CONTAINER_ROOT"
   install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -d "$CONTAINER_ROOT/usr"
 
   rm -f "$C_FUTUR_OK"

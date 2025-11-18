@@ -48,7 +48,7 @@ shift "$((OPTIND-1))"
 
 if [ -n "$PARAMS_FILE" ]; then
   if is_url "$PARAMS_FILE"; then
-    id="$(curl --fail -L "$PARAMS_FILE" | _JQ_SED_ -r '.id')"
+    id="$(curl --fail -sL "$PARAMS_FILE" | _JQ_SED_ -r '.id')"
   else
     id=$(_JQ_SED_ -r '.id' "$PARAMS_FILE")
   fi
@@ -56,6 +56,14 @@ fi
 
 in_nixos_failed "$id"
 container_env "$id"
+
+if [[ "$CONTAINER_DIR" != *var*nixunits* ]]; then
+    echo "INTERNAL ERROR : invalid value for CONTAINER_DIR ${CONTAINER_DIR}" >&2
+    exit 1
+fi
+
+mkdir -p "$CONTAINER_DIR" "$C_FUTUR"
+chmod 2750 "$CONTAINER_DIR"
 
 if [ -n "$PARAMS_FILE" ]; then
   if is_url "$PARAMS_FILE"; then
@@ -69,7 +77,7 @@ fi
 
 if [ -n "$NIX_FILE" ]; then
   if is_url "$NIX_FILE"; then
-    curl --fail -L "$NIX_FILE" -o "$C_FUTUR_NIX"
+    curl --fail -sL "$NIX_FILE" -o "$C_FUTUR_NIX"
   else
     cp "$NIX_FILE" "$C_FUTUR_NIX"
   fi
@@ -81,15 +89,9 @@ if [ ! -f "$C_FUTUR_NIX" ] || [ ! -f "$C_FUTUR_ARGS" ]; then
     usage 1
 fi
 
-mkdir -p "$C_FUTUR"
-
-if [[ "$CONTAINER_DIR" != *var*nixunits* ]]; then
-    echo "INTERNAL ERROR : invalid value for CONTAINER_DIR ${CONTAINER_DIR}" >&2
-    exit 1
-fi
-
-mkdir -p "$CONTAINER_DIR"
-chmod 2750 "$CONTAINER_DIR"
+STORE_HASH=$(hash_with "$C_FUTUR_NIX" "$(hash_ctx)")
+GCROOT_PATH="$GCROOTS_CONTAINERS/$STORE_HASH"
+UNIT_HASH=$(hash_with "$C_FUTUR_ARGS" "$STORE_HASH")
 
 MK_CONTAINER="(builtins.getFlake \"path:_NIXUNITS_PATH_SED_\").lib.${SYSTEM}.mkContainer"
 
@@ -123,7 +125,6 @@ uid_alloc() {
 }
 
 build_store() {
-  GCROOT_PATH="$GCROOTS_CONTAINERS/$1"
   local props='{\"id\": \"dummy\"}'
   local cmd=(nix build "${ARGS[@]}" --out-link "$GCROOT_PATH" --store "$STORE_CONTAINERS" \
                --expr  "($MK_CONTAINER {configFile = $C_FUTUR_NIX; propertiesJSON = \"$props\";})")
@@ -140,10 +141,12 @@ build_container() {
   if [ -f "$C_FUTUR_OK" ]; then
     mv "$C_FUTUR_OK" "${C_FUTUR_OK}_bkp"
   fi
-  rm -rf "$C_TMP"
+  rm -rf "$C_FUTUR/nix"
   mkdir -p "$C_TMP/work" "$C_TMP/merged" "$C_TMP/logs"
 
-  mount -t overlay overlay -o "lowerdir=$STORE_CONTAINERS,upperdir=$C_FUTUR,workdir=$C_TMP/work" "$C_TMP/merged"
+  mount_o="lowerdir=$STORE_CONTAINERS,upperdir=$C_FUTUR,workdir=$C_TMP/work"
+  [ "$DEBUG" = true ] && echo "mount -t overlay overlay -o $mount_o $C_TMP/merged"
+  mount -t overlay overlay -o "$mount_o" "$C_TMP/merged"
   mkdir -p "$C_TMP/merged/nix/var/nix"
   mount -t tmpfs tmpfs "$C_TMP/merged/nix/var/nix"
   rsync -a --exclude=temproots "$STORE_CONTAINERS/nix/var/nix/" "$C_TMP/merged/nix/var/nix/"
@@ -163,26 +166,31 @@ build_container() {
   }
   ln -fs "$CONTAINER_DIR/root$conf_target" "$C_FUTUR/unit.conf"
   cp "$PARAMS_FILE" "$C_FUTUR_ARGS"
-  echo "$1" > "$CONTAINER_META"
+  echo "$UNIT_HASH" > "$CONTAINER_META"
   cp "$C_FUTUR_NIX" "$C_FUTUR_OK"
 }
 
 S=$(_NIXUNITS_PATH_SED_/bin/status.sh "$id")
-need_update=$(echo "$S" | jq -r .need_update)
-need_build_container=$(echo "$S" | jq -r .need_build_container)
+status=$(echo "$S" | jq -r .status)
 
-if [ "$FORCE" = true ] || [ "$need_update" = true ];then
+[ "$status" = "initial" ] && FORCE=true
+
+if [ "$FORCE" = true ] && [ -e "$GCROOT_PATH" ] && [ -e "$(readlink -f "$GCROOT_PATH")" ];then
   lock_acquire
   trap lock_release EXIT
   uid_alloc
-  build_store "$(echo "$S" | jq -r .store_hash)"
+  build_store
   lock_release
+else
+  echo "Store unchanged"
 fi
-if [ "$FORCE" = true ] || [ "$need_build_container" = true ];then
+if [ "$FORCE" = true ] || [ -f "$CONTAINER_META" ] && [ "$(cat "$CONTAINER_META")" = "$UNIT_HASH" ];then
   lock_acquire "$CONTAINER_LOCK"
   trap cleanup EXIT
-  build_container "$(echo "$S" | jq -r .unit_hash)"
+  build_container
   cleanup
+else
+  echo "Build unchanged"
 fi
 trap - EXIT
 
