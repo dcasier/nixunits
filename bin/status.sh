@@ -37,7 +37,8 @@ if [ -n "$STARTED_INFO" ]; then
   mapfile -t ADDRESSES < <(echo "$STARTED_INFO" | _JQ_SED_ -r '.addresses[]?' || true)
 fi
 
-if [ -d "$CONTAINER_OK" ]; then
+STATUS="initial"
+if [ -f "$CONTAINER_OK" ]; then
   STATUS="configured"
   [ "$STARTED" = true ] && STATUS="started"
 fi

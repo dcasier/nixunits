@@ -88,5 +88,4 @@ fi
 if [[ "$started" != true ]] || [ "$RESTART" = true ]
 then
   systemctl start "$_unit"
-  systemctl status "$_unit" --no-pager
 fi
