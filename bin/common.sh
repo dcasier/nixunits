@@ -1,20 +1,33 @@
 PATH="__AWK_BIN_SED__:__FIND_BIN_SED__:__GREP_BIN_SED__:__INOTIFY_BIN_SED__:__PSTREE_BIN_SED__:__SYSTEMD_BIN_SED__:/run/current-system/sw/bin/:$PATH"
 export PATH
 
-PATH_CTX="/var/lib/nixunits"
-PATH_CONTAINER="/var/lib/nixunits/containers"
-LOCKFILE="${PATH_CTX}/.lock"
-UID_INV="$PATH_CTX/uidmap"
-export PATH_CTX LOCKFILE UID_INV
+PATH_NIXUNITS="/var/lib/nixunits"
+GCROOTS_CONTAINERS="$PATH_NIXUNITS/gcroots"
+LOCKFILE="${PATH_NIXUNITS}/.lock"
+PATH_CONTAINERS="$PATH_NIXUNITS/containers"
+STORE_CONTAINERS="$PATH_NIXUNITS/store/default/root"
+SYSTEM=$(nix eval --impure --expr 'builtins.currentSystem' --raw)
+UID_INV="$PATH_NIXUNITS/uidmap"
+export GCROOTS_CONTAINERS LOCKFILE PATH_NIXUNITS STORE_CONTAINERS SYSTEM UID_INV
 
-unit_dir() { echo "$PATH_CONTAINER/$1"; }
-uid_root() {
-  echo $(($(awk -v id="$1" '$1==id {print $2}' "$UID_INV") * 65536))
+container_env() {
+  CONTAINER_DIR=$(unit_dir "$1")
+  C_TMP="$CONTAINER_DIR/tmp"
+  CONTAINER_FUTUR="$C_TMP/root_futur"
+  CONTAINER_FUTUR_OK="$C_TMP/root_futur/.complete"
+  CONTAINER_OK="$C_TMP/.complete"
+  CONTAINER_FUTUR_NIX="$CONTAINER_FUTUR/nix"
+  CONTAINER_LOCK="$CONTAINER_DIR/.lock"
+  CONTAINER_META="$CONTAINER_DIR/.unit_hash"
+  CONTAINER_OLD="$C_TMP/root_old"
+  CONTAINER_ROOT="$CONTAINER_DIR/root"
+  CONTAINER_RID="$(uid_root "$1")"
+  export C_BUILD_OK CONTAINER_DIR CONTAINER_OK \
+        CONTAINER_FUTUR CONTAINER_FUTUR_OK \
+        CONTAINER_FUTUR_NIX CONTAINER_LOCK \
+        CONTAINER_META CONTAINER_ROOT C_TMP \
+        CONTAINER_OLD CONTAINER_RID
 }
-
-unit_conf() { echo "$(unit_dir "$1")/unit.conf"; }
-unit_parameters() { echo "$(unit_dir "$1")/parameters.json"; }
-unit_root() { echo "$(unit_dir "$1")/root/"; }
 
 host_exec() {
   log_msg "[    Host   ] exec $1"
@@ -61,7 +74,7 @@ in_nixos_failed() {
   then
     if in_nixos "$1"
     then
-      echo "Error: Container declared by NixOS (use -f [force])"
+      echo "Error: Container declared by NixOS"
       exit 1
     fi
   fi
@@ -72,18 +85,24 @@ ip6_crc32() { echo "$(_ip6_crc32 "$1"):2"; }
 ip6_crc32_host() { echo "$(_ip6_crc32 "$1"):1"; }
 
 lock_acquire() {
-    while ! ln -s "$$" "$LOCKFILE" 2>/dev/null; do
-        pid=$(readlink "$LOCKFILE" 2>/dev/null)
+    local lock_path="${1:-$LOCKFILE}"
+
+    while ! ln -s "$$" "$lock_path" 2>/dev/null; do
+        pid=$(readlink "$lock_path" 2>/dev/null)
         if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
-            rm -f "$LOCKFILE"
+            rm -f "$lock_path"
+            continue
         fi
         sleep 0.1
     done
+    echo "Lock acquired: $lock_path by $$"
 }
 
 lock_release() {
-    pid=$(readlink "$LOCKFILE" 2>/dev/null)
-    [ "$pid" = "$$" ] && rm -f "$LOCKFILE"
+    local lock_path="${1:-$LOCKFILE}"
+    pid=$(readlink "$lock_path" 2>/dev/null)
+    [ "$pid" = "$$" ] && rm -f "$lock_path"
+    echo "Lock lock_release: $lock_path by $$"
 }
 
 log() { echo "$(unit_dir "$1")/unit.log"; }
@@ -169,6 +188,15 @@ shell_exist() {
 shell_netns() {
   echo --target "$(pid_leader "$1")" --net;
 }
+
+unit_dir() { echo "$PATH_CONTAINERS/$1"; }
+uid_root() {
+  echo $(($(awk -v id="$1" '$1==id {print $2}' "$UID_INV") * 65536))
+}
+
+unit_conf() { echo "$(unit_dir "$1")/unit.conf"; }
+unit_parameters() { echo "$(unit_dir "$1")/parameters.json"; }
+unit_root() { echo "$(unit_dir "$1")/root/"; }
 
 _ip6_crc32() {
   _crc32=$(echo -n "$1" | gzip -c | tail -c8 | head -c4 | hexdump -e '"%01x"')

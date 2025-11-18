@@ -21,17 +21,9 @@ id=$1
 shift
 echo "Start $id"
 
-CONTAINER_DIR=$(unit_dir "$id")
-if [[ "$CONTAINER_DIR" != *var*nixunits* ]]; then
-    echo "INTERNAL ERROR : invalid value for CONTAINER_DIR ${CONTAINER_DIR}" >&2
-    exit 1
-fi
-
-ROOT="$CONTAINER_DIR/root"
-TMP_DIR="$CONTAINER_DIR/tmp"
-ROOT_FUTUR="$TMP_DIR/root_futur"
-ROOT_OLD="$TMP_DIR/root_old"
-UID_ROOT=$(uid_root "$id")
+container_env "$id"
+_unit="nixunits@${id}.service"
+# _unit_net="nixunits-network@${id}.service"
 
 RESTART=false
 SWITCH=false
@@ -45,43 +37,52 @@ while getopts "rsh" opt; do
   esac
 done
 
-_NIXUNITS_PATH_SED_/bin/enable.sh "$id"
-
-cleanup() {
-  lock_release
-}
-
 switch() {
   echo "Switch"
-  mkdir -p "$ROOT/usr" "$ROOT_OLD"
-  chown "$UID_ROOT":"$UID_ROOT" "$ROOT"
-  chown "$UID_ROOT":"$UID_ROOT" "$ROOT/usr"
-  test -d "$ROOT/nix" && mv "$ROOT/nix" "$ROOT_OLD/"
-  mv "$ROOT_FUTUR/nix" "$ROOT/"
+  mkdir -p "$CONTAINER_OLD"
+  rm -f "$CONTAINER_OK"
+  test -d "$CONTAINER_ROOT/nix" && mv "$CONTAINER_ROOT/nix" "$CONTAINER_OLD/"
   test -f "$CONTAINER_DIR/unit.conf" && rm "$CONTAINER_DIR/unit.conf"
-  mv "$ROOT_FUTUR/unit.conf" "$CONTAINER_DIR/unit.conf"
-  cp "$ROOT_FUTUR/parameters.json" "$(unit_parameters "$id")"
-  rm "$ROOT_FUTUR/.complete"
+
+  install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -m 2750 -d "$CONTAINER_ROOT"
+  install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -d "$CONTAINER_ROOT/usr"
+
+  rm -f "$CONTAINER_FUTUR/.complete"
+  mv "$CONTAINER_FUTUR/nix" "$CONTAINER_ROOT"
+  mv "$CONTAINER_FUTUR/unit.conf" "$CONTAINER_DIR/unit.conf"
+  mv "$CONTAINER_FUTUR/parameters.json" "$(unit_parameters "$id")"
+  touch "$CONTAINER_OK"
 }
 
-_unit="nixunits@${id}.service"
-_unit_net="nixunits-network@${id}.service"
+S=$(_NIXUNITS_PATH_SED_/bin/status.sh "$id")
+started=$(echo "$S" | jq -r .started)
 
-STARTED=$(systemctl show "$_unit" --no-pager |grep ^SubState=running >/dev/null && echo true || echo false)
+if [[ "$started" = true ]] && [ "$RESTART" != true ];then
+    SWITCH=false
+elif [ "$(echo "$S" | jq -r .need_switch)" != "true" ]; then
+    SWITCH=false
+fi
 
-if [ "$STARTED" = true ] && [ "$RESTART" = true ]; then
+if [ ! -f "$CONTAINER_OK" ] && [ "$SWITCH" = false ]; then
+  echo "Container $id not ready"
+  exit 1
+fi
+
+_NIXUNITS_PATH_SED_/bin/enable.sh "$id"
+
+if [[ "$started" == "true" ]] && [ "$RESTART" = true ]; then
   systemctl stop "$_unit"
 fi
 
-if [ "$STARTED" != true ] || [ "$RESTART" = true ];then
-  if [ "$SWITCH" = true ] && [ -f "$ROOT_FUTUR/.complete" ]; then
-    lock_acquire
-    switch
-    trap cleanup EXIT
-  fi
+if [ "$SWITCH" = true ] ; then
+  lock_acquire "$CONTAINER_LOCK"
+  trap 'lock_release "$CONTAINER_LOCK"' EXIT
+  switch
+  lock_release "$CONTAINER_LOCK"
+  trap - EXIT
 fi
 
-if [ "$STARTED" != true ] || [ "$RESTART" = true ]
+if [[ "$started" != true ]] || [ "$RESTART" = true ]
 then
   systemctl start "$_unit"
   systemctl status "$_unit" --no-pager

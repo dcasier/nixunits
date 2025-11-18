@@ -6,118 +6,108 @@ set -e
 usage() {
   echo "Usage : nixunits status <container id> [options]"
   echo "Available options:"
-  echo "  -j JSON parameters file (for comparison)"
-  echo "  -d details"
-  echo "  -o <output [json/plain]>"
+  echo "  -j JSON parameters file"
+  echo "  -n  Nix config file"
   echo "  -h, --help"
-  echo
-
   test -n "$1" && exit "$1"
   exit 0
 }
 
+test $# -eq 0 && usage 1
 id=$1
-test -z "$id" && usage 1
-test "$id" = "h" && usage 0
-test "$id" = "-h" && usage 0
-test "$id" = "help" && usage 0
-test "$id" = "--help" && usage 0
+[[ "$1" =~ ^(-h|--help)$ ]] && usage 0
 shift
 
-DETAILS=false
-OUTPUT="plain"
+NIX_FILE=""
+PARAMS_FILE=""
 
-while getopts "dj:o:h:" opt; do
+while getopts "n:j:h" opt; do
   case $opt in
-    d)
-      DETAILS=true;;
-    j)
-      PARAMETERS_FILE=$OPTARG;;
-    o)
-      if [ "$OPTARG" != "plain" ] && [ "$OPTARG" != "json" ]; then
-        echo "Invalid output format : $OPTARG"
-        usage 1
-      fi
-      OUTPUT=$OPTARG;;
-    h)
-      usage;;
-    \?)
-      echo "Invalid option : -$OPTARG" >&2
-      usage 1;;
+    n) NIX_FILE=$OPTARG;;
+    j) PARAMS_FILE=$OPTARG;;
+    h) usage;;
+    *) usage 1;;
   esac
 done
 
-CONF_EXIST=false
-NIX_SAME=false
-DATA_EXIST=false
-DECLARED_IN_NIXOS=false
-STATUS=$(test -f "$(unit_conf "$id")" && echo "created" || echo "initial")
+if { [ -n "$NIX_FILE" ] && [ -z "$PARAMS_FILE" ]; } \
+   || { [ -z "$NIX_FILE" ] && [ -n "$PARAMS_FILE" ]; }; then
+    echo "Error: -n and -j must be provided together." >&2
+    exit 1
+fi
 
-if [ "$DETAILS" == "true" ]
-then
-  STARTED_INFO=$(machinectl -o json | _JQ_SED_ ".[] | select(.machine == \"$id\")")
-  if [ "$STARTED_INFO" != "" ]
-  then
-    STATUS="started"
-    OS=$(echo "$STARTED_INFO" | _JQ_SED_ -r .os)
-    VERSION=$(echo "$STARTED_INFO" | _JQ_SED_ -r .version)
-    ADDRESSES=$(echo "$STARTED_INFO" | _JQ_SED_ -r .addresses)
+container_env "$id"
+
+NEED_UPDATE=true
+NEED_BUILD_CONTAINER=true
+NEED_SWITCH=$([ -f "$CONTAINER_FUTUR_OK" ] && echo true || echo false)
+STARTED=false
+
+IN_NIXOS=$(in_nixos "$id" && echo "true" || echo "false")
+
+if [ -f "$CONTAINER_META" ]; then
+  STATUS="created"
+  if [ -d "$CONTAINER_ROOT" ]; then
+    STATUS="configured"
+    STARTED_INFO=$(machinectl -o json | _JQ_SED_ ".[] | select(.machine == \"$id\")" || true)
+    if [ -n "$STARTED_INFO" ]; then
+      STARTED=true
+      STATUS="started"
+      OS=$(echo "$STARTED_INFO" | _JQ_SED_ -r .os)
+      VERSION=$(echo "$STARTED_INFO" | _JQ_SED_ -r .version)
+      mapfile -t ADDRESSES < <(echo "$STARTED_INFO" | _JQ_SED_ -r '.addresses[]?' || true)
+    fi
+  elif [ ! -d "$CONTAINER_FUTUR_NIX"  ]; then
+    STATUS="initial"
   fi
 else
-  sub_state=$(machinectl show "$id" 2>/dev/null |grep ^State | cut -d'=' -f2)
-  if [ "$sub_state" == "running" ]; then
-    STATUS="started"
-  fi
-fi
-_unit_conf=$(unit_conf "$id")
-
-if [ "$STATUS" != "initial" ]
-then
-  if [ -f "$_unit_conf" ]
-  then
-    CONF_EXIST="true"
-    DECLARED_IN_NIXOS=$(in_nixos "$id" && echo "true" || echo "false")
-    if [ "$PARAMETERS_FILE" != "" ]
-    then
-      diff "$PARAMETERS_FILE" "$(unit_parameters "$id")" >/dev/null && NIX_SAME=true
-    fi
-  else
-    CONF_EXIST="false"
-    STATUS="created"
-  fi
-  DATA_EXIST=$(test -d "$(unit_root "$id")" && echo "true" || echo "false")
+  STATUS="initial"
 fi
 
-if [ "$OUTPUT" = "plain" ]
-then
-  echo "Container $id :"
-  echo "  status : $STATUS"
-  if [ "$STATUS" != "initial" ]
+analyze() {
+  FLAKE_REV=$(nix flake metadata "_NIXUNITS_PATH_SED_" --json | jq -r '.revision // .fingerprint // "dirty"')
+
+  NIX_HASH=$(sha1sum "$NIX_FILE" | cut -d' ' -f1)
+  PARAMS_HASH=$(sha1sum "$PARAMS_FILE" | cut -d' ' -f1)
+
+  STORE_HASH=$(echo "${SYSTEM}-${NIX_HASH}-${FLAKE_REV}" | sha1sum | cut -d' ' -f1)
+  UNIT_HASH=$(echo -n "${STORE_HASH}-${PARAMS_HASH}" | sha1sum | cut -d' ' -f1)
+  GCROOT_PATH="/var/lib/nixunits/gcroots/$STORE_HASH"
+
+  if [ -e "$GCROOT_PATH" ] && [ -e "$(readlink -f "$GCROOT_PATH")" ]
   then
-    echo "  declared in nixos configuration : $DECLARED_IN_NIXOS"
-    echo "  config exist : $CONF_EXIST"
-    echo "  data exist : $DATA_EXIST"
-    if [ "$DETAILS" == "true" ] && [ "$STATUS" == "started" ]
-    then
-      echo "  os : $OS"
-      echo "  version : $VERSION"
-      echo "  addresses:"
-      for a in $ADDRESSES
-      do
-        echo "   * $a"
-      done
+    NEED_UPDATE=false
+    if [ -f "$CONTAINER_META" ] && [ "$(cat "$CONTAINER_META")" = "$UNIT_HASH" ]; then
+      NEED_BUILD_CONTAINER=false
     fi
   fi
-else
-  echo "{
-  \"id\": \"$id\",
-  \"os\": \"$OS\",
-  \"status\": \"$STATUS\",
-  \"version\": \"$VERSION\",
-  \"data_exist\": $DATA_EXIST,
-  \"config_exist\": $CONF_EXIST,
-  \"nix_same\": $NIX_SAME,
-  \"declared_in_nixos\": $DECLARED_IN_NIXOS,
-  \"addresses\": [$(for a in $ADDRESSES;do echo -n \""$a"\"; echo -n ","; done | sed 's/,$//')]
-}"
+}
+
+printf '{\n'
+printf '  "id": "%s",\n' "$id"
+printf '  "started": "%s",\n' "$STARTED"
+printf '  "status": "%s",\n' "$STATUS"
+printf '  "in_nixos": "%s",\n' "$IN_NIXOS"
+
+if [ "$STATUS" = "started" ];then
+  printf '  "os": "%s",\n' "$OS"
+  printf '  "version": "%s",\n' "$VERSION"
+  printf '  "addresses": ['
+  first=true
+  for a in "${ADDRESSES[@]}"; do
+    $first || printf ', '
+    printf '"%s"' "$a"
+    first=false
+  done
+  printf ']\n'
 fi
+
+if [ "$IN_NIXOS" = false ] && [ -n "$NIX_FILE" ]; then
+  analyze
+  printf '  "store_hash": "%s",\n' "$STORE_HASH"
+  printf '  "unit_hash": "%s",\n' "$UNIT_HASH"
+  printf '  "need_update": %s,\n' "$NEED_UPDATE"
+  printf '  "need_build_container": %s,\n' "$NEED_BUILD_CONTAINER"
+  printf '  "need_switch": %s,\n' "$NEED_SWITCH"
+fi
+printf '}\n'

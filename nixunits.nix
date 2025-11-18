@@ -8,6 +8,7 @@ stdenv.mkDerivation rec {
 
   buildPhase = with pkgs; ''
     mkdir -p $out/bin $out/nix $out/tests $out/unit
+    cp $src/flake.lock $out/
     cp $src/*.nix $out/
     cp $src/bin/* $out/bin/
     cp -r $src/nix/ $out/
