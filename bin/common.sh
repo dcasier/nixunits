@@ -13,20 +13,23 @@ export GCROOTS_CONTAINERS LOCKFILE PATH_NIXUNITS STORE_CONTAINERS SYSTEM UID_INV
 container_env() {
   CONTAINER_DIR=$(unit_dir "$1")
   C_TMP="$CONTAINER_DIR/tmp"
-  CONTAINER_FUTUR="$C_TMP/root_futur"
-  CONTAINER_FUTUR_OK="$C_TMP/root_futur/.complete"
-  CONTAINER_OK="$C_TMP/.complete"
-  CONTAINER_FUTUR_NIX="$CONTAINER_FUTUR/nix"
+  C_FUTUR="$C_TMP/root_futur"
+  C_FUTUR_ARGS="$C_FUTUR/parameters.json"
+  C_FUTUR_OK="$C_FUTUR/.complete"
+  C_FUTUR_NIX="$C_FUTUR/configuration.nix"
+  CONTAINER_ARGS="$CONTAINER_DIR/parameters.json"
   CONTAINER_LOCK="$CONTAINER_DIR/.lock"
   CONTAINER_META="$CONTAINER_DIR/.unit_hash"
+  CONTAINER_NIX="$CONTAINER_DIR/configuration.nix"
   CONTAINER_OLD="$C_TMP/root_old"
+  CONTAINER_OK="$C_TMP/.complete"
   CONTAINER_ROOT="$CONTAINER_DIR/root"
   CONTAINER_RID="$(uid_root "$1")"
-  export C_BUILD_OK CONTAINER_DIR CONTAINER_OK \
-        CONTAINER_FUTUR CONTAINER_FUTUR_OK \
-        CONTAINER_FUTUR_NIX CONTAINER_LOCK \
+  export CONTAINER_ARGS C_BUILD_OK CONTAINER_DIR CONTAINER_OK \
+        C_FUTUR C_FUTUR_OK C_FUTUR_ARGS \
+        C_FUTUR_NIX CONTAINER_LOCK \
         CONTAINER_META CONTAINER_ROOT C_TMP \
-        CONTAINER_OLD CONTAINER_RID
+        CONTAINER_OLD CONTAINER_RID CONTAINER_NIX
 }
 
 host_exec() {
@@ -83,6 +86,14 @@ in_nixos_failed() {
 ip6_crc32() { echo "$(_ip6_crc32 "$1"):2"; }
 
 ip6_crc32_host() { echo "$(_ip6_crc32 "$1"):1"; }
+
+
+is_url() {
+    case "$1" in
+        http://*|https://*) return 0;;
+        *) return 1;;
+    esac
+}
 
 lock_acquire() {
     local lock_path="${1:-$LOCKFILE}"
@@ -195,7 +206,6 @@ uid_root() {
 }
 
 unit_conf() { echo "$(unit_dir "$1")/unit.conf"; }
-unit_parameters() { echo "$(unit_dir "$1")/parameters.json"; }
 unit_root() { echo "$(unit_dir "$1")/root/"; }
 
 _ip6_crc32() {

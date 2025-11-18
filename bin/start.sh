@@ -40,18 +40,20 @@ done
 switch() {
   echo "Switch"
   mkdir -p "$CONTAINER_OLD"
-  rm -f "$CONTAINER_OK"
+  if [ -f "$CONTAINER_OK" ]; then
+    mv "$CONTAINER_OK" "${CONTAINER_OK}_bkp"
+  fi
   test -d "$CONTAINER_ROOT/nix" && mv "$CONTAINER_ROOT/nix" "$CONTAINER_OLD/"
   test -f "$CONTAINER_DIR/unit.conf" && rm "$CONTAINER_DIR/unit.conf"
 
   install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -m 2750 -d "$CONTAINER_ROOT"
   install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -d "$CONTAINER_ROOT/usr"
 
-  rm -f "$CONTAINER_FUTUR/.complete"
-  mv "$CONTAINER_FUTUR/nix" "$CONTAINER_ROOT"
-  mv "$CONTAINER_FUTUR/unit.conf" "$CONTAINER_DIR/unit.conf"
-  mv "$CONTAINER_FUTUR/parameters.json" "$(unit_parameters "$id")"
-  touch "$CONTAINER_OK"
+  rm -f "$C_FUTUR_OK"
+  mv "$C_FUTUR/nix" "$CONTAINER_ROOT"
+  mv "$C_FUTUR/unit.conf" "$CONTAINER_DIR/unit.conf"
+  mv "$C_FUTUR_ARGS" "$CONTAINER_ARGS"
+  mv "$C_FUTUR_NIX" "$CONTAINER_OK"
 }
 
 S=$(_NIXUNITS_PATH_SED_/bin/status.sh "$id")

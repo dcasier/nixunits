@@ -41,7 +41,19 @@ while getopts "defn:j:hsr" opt; do
 done
 shift "$((OPTIND-1))"
 
-if [ -z "${NIX_FILE:-}" ] || [ -z "${PARAMS_FILE:-}" ]; then
+if [ -n "$NIX_FILE" ]; then
+  if is_url "$NIX_FILE"; then
+    curl --fail -L "$NIX_FILE" -o "$C_FUTUR_NIX"
+  else
+    cp "$NIX_FILE" "$C_FUTUR_NIX"
+  fi
+elif [ -f "$CONTAINER_NIX" ]; then
+  cp "$CONTAINER_NIX" "$C_FUTUR_NIX"
+fi
+
+
+
+if [ ! -f "$C_FUTUR_NIX" ] || [ -z "${PARAMS_FILE:-}" ]; then
     echo "Args missing" >&2
     usage 1
 fi
@@ -93,7 +105,7 @@ build_store() {
   GCROOT_PATH="$GCROOTS_CONTAINERS/$1"
   local props='{\"id\": \"dummy\"}'
   local cmd=(nix build "${ARGS[@]}" --out-link "$GCROOT_PATH" --store "$STORE_CONTAINERS" \
-               --expr  "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = \"$props\";})")
+               --expr  "($MK_CONTAINER {configFile = $C_FUTUR_NIX; propertiesJSON = \"$props\";})")
 
   echo "Build store for $id"
   [ "$DEBUG" = true ] && echo "${cmd[@]}"
@@ -104,35 +116,37 @@ build_store() {
 }
 
 build_container() {
-  test -f "$CONTAINER_FUTUR_OK" && rm "$CONTAINER_FUTUR_OK"
+  if [ -f "$C_FUTUR_OK" ]; then
+    mv "$C_FUTUR_OK" "${C_FUTUR_OK}_bkp"
+  fi
   rm -rf "$C_TMP"
-  mkdir -p "$CONTAINER_FUTUR" "$C_TMP/work" "$C_TMP/merged" "$C_TMP/logs"
+  mkdir -p "$C_FUTUR" "$C_TMP/work" "$C_TMP/merged" "$C_TMP/logs"
 
-  mount -t overlay overlay -o "lowerdir=$STORE_CONTAINERS,upperdir=$CONTAINER_FUTUR,workdir=$C_TMP/work" "$C_TMP/merged"
+  mount -t overlay overlay -o "lowerdir=$STORE_CONTAINERS,upperdir=$C_FUTUR,workdir=$C_TMP/work" "$C_TMP/merged"
   mkdir -p "$C_TMP/merged/nix/var/nix"
   mount -t tmpfs tmpfs "$C_TMP/merged/nix/var/nix"
   rsync -a --exclude=temproots "$STORE_CONTAINERS/nix/var/nix/" "$C_TMP/merged/nix/var/nix/"
 
   local props="builtins.readFile $PARAMS_FILE"
   local cmd=(nix build --no-link --print-out-paths "${ARGS[@]}" --store "$C_TMP/merged" \
-               --expr  "($MK_CONTAINER {configFile = $NIX_FILE; propertiesJSON = $props;})")
+               --expr  "($MK_CONTAINER {configFile = $C_FUTUR_NIX; propertiesJSON = $props;})")
 
   echo "Build container $id"
   [ "$DEBUG" = true ] && echo "${cmd[@]}"
   RESULT_PATH="$("${cmd[@]}")"
 
-  conf_path="$CONTAINER_FUTUR/$RESULT_PATH/etc/nixunits/$id.conf"
+  conf_path="$C_FUTUR/$RESULT_PATH/etc/nixunits/$id.conf"
   conf_target=$(readlink -f "$conf_path") || {
     echo "INTERNAL ERROR : Failed get $conf_path" >&2
     exit 1
   }
-  ln -fs "$CONTAINER_DIR/root$conf_target" "$CONTAINER_FUTUR/unit.conf"
-  cp "$PARAMS_FILE" "$CONTAINER_FUTUR/parameters.json"
+  ln -fs "$CONTAINER_DIR/root$conf_target" "$C_FUTUR/unit.conf"
+  cp "$PARAMS_FILE" "$C_FUTUR_ARGS"
   echo "$1" > "$CONTAINER_META"
-  touch "$CONTAINER_FUTUR_OK"
+  cp "$C_FUTUR_NIX" "$C_FUTUR_OK"
 }
 
-S=$(_NIXUNITS_PATH_SED_/bin/status.sh "$id" -j "$PARAMS_FILE" -n "$NIX_FILE")
+S=$(_NIXUNITS_PATH_SED_/bin/status.sh "$id")
 need_update=$(echo "$S" | jq -r .need_update)
 need_build_container=$(echo "$S" | jq -r .need_build_container)
 
