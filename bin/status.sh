@@ -41,7 +41,7 @@ if [ -n "$STARTED_INFO" ]; then
   STARTED=true
   OS=$(echo "$STARTED_INFO" | _JQ_SED_ -r .os)
   VERSION=$(echo "$STARTED_INFO" | _JQ_SED_ -r .version)
-  mapfile -t ADDRESSES < <(echo "$STARTED_INFO" | _JQ_SED_ -r '.addresses[]?' || true)
+  ADDRESSES=$(echo "$STARTED_INFO" | _JQ_SED_ -r '.addresses // ""' | tr '\n' ' ')
 fi
 
 STATUS="initial"
@@ -95,7 +95,7 @@ if [ "$STARTED" = true ]; then
   printf '  "version": "%s",\n' "$VERSION"
   printf '  "addresses": ['
   first=true
-  for a in "${ADDRESSES[@]}"; do
+  for a in $ADDRESSES; do
     $first || printf ', '
     printf '"%s"' "$a"
     first=false
