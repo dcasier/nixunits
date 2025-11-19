@@ -44,7 +44,10 @@ switch() {
   if [ -f "$CONTAINER_OK" ]; then
     mv "$CONTAINER_OK" "${CONTAINER_OK}_bkp"
   fi
-  test -d "$CONTAINER_ROOT/nix" && mv "$CONTAINER_ROOT/nix" "$CONTAINER_OLD/"
+  if [ -d "$CONTAINER_ROOT/nix" ]; then
+    rm -fr "$CONTAINER_OLD/nix"
+    mv "$CONTAINER_ROOT/nix" "$CONTAINER_OLD"
+  fi
   test -f "$CONTAINER_DIR/unit.conf" && rm "$CONTAINER_DIR/unit.conf"
 
   install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -d "$CONTAINER_ROOT"

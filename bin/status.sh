@@ -51,8 +51,8 @@ if [ -f "$CONTAINER_OK" ]; then
 fi
 
 NEED_SWITCH=false
-NEED_STORE_BUILD="unknown"
-NEED_CONTAINER_BUILD="unknown"
+NEED_STORE_BUILD=false
+NEED_CONTAINER_BUILD=false
 
 if [ -f "$C_FUTUR_OK" ]; then
   NEED_SWITCH=true
