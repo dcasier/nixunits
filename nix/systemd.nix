@@ -36,7 +36,6 @@ let
     path = [ pkgs.iproute2 ];
     restartIfChanged = false;
     unitConfig.RequiresMountsFor = "${global.pathContainers}/%i";
-    wantedBy = [ "multi-user.target" ];
     inherit serviceConfig;
   };
 in
