@@ -16,14 +16,9 @@
 
     lib = forAllSystems (pkgs: {
       mkContainer = { configFile, propertiesJSON }:
-        let
-          properties = builtins.fromJSON(propertiesJSON);
-          serviceConfig = import configFile { inherit pkgs properties; lib = pkgs.lib; };
-          id = properties.id;
-        in
-          pkgs.callPackage ./nix/default.nix {
-              inherit id serviceConfig pkgs;
-          };
+        pkgs.callPackage ./nix/default.nix {
+            inherit configFile pkgs propertiesJSON;
+        };
     });
 
     packages = forAllSystems (pkgs: {

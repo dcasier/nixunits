@@ -1,6 +1,6 @@
 {
-  serviceConfig ? null
-, id ? null
+  configFile ? null
+, propertiesJSON ? null
 , pkgs
 }:
 
@@ -30,7 +30,7 @@ let
         };
       };
     })
-  ] ++ (if serviceConfig == null then [
+  ] ++ (if configFile == null then [
     ({ config, lib, pkgs, ... }: {
       config = {
         systemd = import ./systemd.nix {
@@ -39,10 +39,14 @@ let
       };
     })
   ] else [
-    {
-      ${global.moduleName}.${id} = serviceConfig;
-    }
+    ({ config, pkgs, lib, ... }: let
+      properties = builtins.fromJSON(propertiesJSON);
+      id = properties.id;
+    in {
+      ${global.moduleName}.${id} = import configFile { inherit config lib pkgs properties; };
+    })
   ]);
+
 
   utils = import ./utils.nix;
 
@@ -53,7 +57,7 @@ let
     })
   ).config.system;
 in
-if serviceConfig == null then
+if configFile == null then
   system
 else
   system.build.etc
