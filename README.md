@@ -119,7 +119,7 @@ in {
 
   config = {
     services.httpd.enable = true;
-    system.stateVersion = "25.05";
+    system.stateVersion = "25.11";
   };
 }
 ```
@@ -236,7 +236,7 @@ in {
   config = {
     networking.firewall.enable = false;
     services.dnsmasq.enable = true;
-    system.stateVersion = "25.05";
+    system.stateVersion = "25.11";
   };
   extra = ''
     # Content evaluated by /bin/sh inside the container

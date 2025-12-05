@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=25.05
+VERSION=25.11
 
 STATUS_1_INITIAL=$(cat <<EOF
 {
