@@ -8,7 +8,10 @@
   outputs = { self, nixpkgs }:  let
     systems = [ "x86_64-linux" "aarch64-linux" ];
     forAllSystems = f: nixpkgs.lib.genAttrs systems (system:
-      f (import nixpkgs { inherit system; })
+      f (import nixpkgs {
+        overlays = [];
+        inherit system;
+      })
     );
   in {
     nixosModules.default = import ./module.nix;

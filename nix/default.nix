@@ -30,7 +30,8 @@ let
         };
       };
     })
-  ] ++ (if configFile == null then [
+  ] ++ modules_from_dir
+    ++ (if configFile == null then [
     ({ config, lib, pkgs, ... }: {
       config = {
         systemd = import ./systemd.nix {
@@ -46,7 +47,15 @@ let
       ${global.moduleName}.${id} = import configFile { inherit config lib pkgs properties; };
     })
   ]);
-
+  modules_dir = work_dir + "/modules";
+  modules_from_dir =
+  lib.filter (x: x != null)
+    (lib.mapAttrsToList
+      (name: type:
+        if type == "regular" && lib.hasSuffix ".nix" name
+        then modules_dir + "/${name}"
+        else null)
+      (builtins.readDir modules_dir));
 
   utils = import ./utils.nix;
 
@@ -56,8 +65,9 @@ let
       specialArgs = {inherit pkgs;};
     })
   ).config.system;
+  work_dir = "/var/lib/nixunits";
 in
-if configFile == null then
-  system
-else
-  system.build.etc
+  if configFile == null then
+    system
+  else
+    system.build.etc
