@@ -17,7 +17,8 @@ let
 
   cfgUnit = name: cfg: security.cfgValid cfg;
 
-  configExtra = {config, ...}: {
+  configExtra = {config, ...}: let
+  in {
     boot = {
       isContainer = true;
       postBootCommands = ''
@@ -26,16 +27,16 @@ let
       '';
     };
     environment = {
+      # etc."resolv.conf".text = builtins.readFile /etc/resolv.conf;
       systemPackages = with pkgs; [
         jq
       ];
     };
-    # networking.hostName = mkDefault name;
     networking = {
       resolvconf.enable = false;
       useDHCP = false;
     };
-    nixpkgs.pkgs = pkgs;
+    nixpkgs = { inherit pkgs; };
     services.nscd.enable = false;
     system = {
       activationScripts.specialfs = mkForce "";
@@ -46,18 +47,9 @@ let
       coredump.enable = false;
       oomd.enable = false;
       package = pkgs.systemdMinimal;
-#      paths."wait-net-ready" = {
-#        after = [ "network-pre.target" ];
-#        description = "Wait host signal";
-#        pathConfig = {
-#          PathExists = "/run/net-ready";
-#        };
-#        wantedBy = [ "network-pre.target" ];
-#      };
       services."wait-net-ready" = {
-        before = [ "network-pre.target" "network-online.target" ];
-        wantedBy = [ "network-pre.target" "network-online.target" ];
         description = "Wait network ready";
+        enable = true;
         serviceConfig = let
           waitNetReady = pkgs.writeShellScript "wait-net-ready.sh" ''
             set -eu
@@ -70,13 +62,7 @@ let
             while ${pkgs.iproute2}/bin/ip -6 a| grep -q "tentative"; do
                 sleep 0.5
             done
-
-            gw=$(${pkgs.iproute2}/bin/ip  -6 -j route get default 2>/dev/null |${pkgs.jq}/bin/jq '.[].gateway')
-            eth=$(${pkgs.iproute2}/bin/ip -6 -j route get default 2>/dev/null |${pkgs.jq}/bin/jq '.[].gateway')
-
-            while ! ${pkgs.iputils}/bin/ping -c 1 -w 1 ''${gw}%''${eth};do
-              sleep 0.5
-            done
+            sleep 2
 
             ${pkgs.iproute2}/bin/ip a
             rm -f /run/net-ready
@@ -102,7 +88,10 @@ let
         "suid-sgid-wrappers.service"
         "systemd-user-sessions.service"
       ];
-      targets.multi-user.requires = [ "basic.target" "wait-net-ready.service" ];
+      targets.network-pre.after = [ "wait-net-ready.service" ];
+      targets.network-pre.wants = [ "wait-net-ready.service" ];
+      targets.network-online.after = [ "wait-net-ready.service" ];
+      targets.network-online.wants = [ "wait-net-ready.service" ];
     };
   };
 
@@ -174,10 +163,7 @@ let
   security = import ./security.nix {inherit lib;};
 
 in with lib; {
-  inherit conf
-    unitConf
-    moduleName
-    pathContainers pathRoot pathVar;
+  inherit conf unitConf moduleName pathContainers pathRoot pathVar;
   options = {
     nixunits = mkOption {
       type = types.attrsOf (types.submodule (
@@ -224,6 +210,12 @@ in with lib; {
                   modules = [
                     configExtra
                     { config.assertions = (assertions {inherit name;cfg=config;}); }
+                    {
+                      options.systemdDeps = lib.mkOption {
+                        type = lib.types.listOf lib.types.str;
+                        default = [];
+                      };
+                    }
                   ] ++ (map (x: cfgUnit name x.value) defs);
                   prefix = [ moduleName name ];
 

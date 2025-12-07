@@ -16,12 +16,16 @@ let
     (_modules + "/system/etc/etc.nix")
     (import ./tmpfiles.nix)
     (import ./dummy_options.nix)
-    ({ config, lib, pkgs, ... }: {
+    ({ config, lib, pkgs, ... }: with lib; {
       config = global.conf config.${global.moduleName};
       options = global.options // {
-        boot.isContainer = lib.mkOption {
-          type = lib.types.bool;
+        boot.isContainer = mkOption {
+          type = types.bool;
           default = true;
+        };
+        systemdDeps = mkOption {
+          default = [];
+          type = types.listOf types.str;
         };
       };
     })

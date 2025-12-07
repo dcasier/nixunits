@@ -1,4 +1,14 @@
 { lib }: with lib; let
+
+  cfgValid = cfg: let
+    deps = cfg.systemdDeps or [];
+    names = (lib.attrNames (cfg.services or {})) ++ deps;
+    patch = lib.foldl'
+      (acc: name: acc // { systemd.services.${name} = systemd ; })
+      {} names;
+  in
+     recursiveUpdate cfg patch;
+
   systemd = {
       # serviceConfig.NoNewPrivileges = mkForce null;
       # serviceConfig.ProtectSystem = "strict";
@@ -6,27 +16,25 @@
       # serviceConfig.PrivateTmp = mkForce null;
       serviceConfig = {
         DynamicUser = mkForce false;
-        PrivateDevices = mkForce null;
-        PrivateMounts = mkForce null;
-        ProtectHostname = mkForce null;
-        ProtectKernelTunables = mkForce null;
-        ProtectKernelModules = mkForce null;
-        ProtectControlGroups = mkForce null;
         LockPersonality = mkForce null;
         MemoryDenyWriteExecute = mkForce null;
+        ProtectControlGroups = lib.mkForce false;
+        PrivateDevices = mkForce null;
+        ProtectHostname = mkForce null;
+        ProtectKernelModules = mkForce null;
+        ProtectKernelTunables = mkForce null;
+        PrivateMounts = mkForce null;
+        PrivateUsers = lib.mkForce false;
         RestrictAddressFamilies = mkForce null;
         RestrictNamespaces = mkForce null;
         RestrictRealtime = mkForce null;
         RestrictSUIDSGID = mkForce null;
         SystemCallArchitectures = mkForce null;
       };
+
+      after = [ "wait-net-ready.service" ];
+      wants = [ "wait-net-ready.service" ];
   };
-  cfgValid = cfg: let
-    patch = ( if hasAttr "services" cfg then
-      { systemd.services = mapAttrs (name: _: systemd) cfg.services; }
-    else {});
-  in
-     recursiveUpdate cfg patch;
 in {
   flags = caps_allow: let
     CAPS = subtractLists caps_allow [
