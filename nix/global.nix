@@ -70,6 +70,14 @@ let
             while ${pkgs.iproute2}/bin/ip -6 a| grep -q "tentative"; do
                 sleep 0.5
             done
+
+            gw=$(${pkgs.iproute2}/bin/ip  -6 -j route get default 2>/dev/null |${pkgs.jq}/bin/jq '.[].gateway')
+            eth=$(${pkgs.iproute2}/bin/ip -6 -j route get default 2>/dev/null |${pkgs.jq}/bin/jq '.[].gateway')
+
+            while ! ${pkgs.iputils}/bin/ping -c 1 -w 1 ${gw}%${eth};do
+              sleep 0.5
+            done
+
             ${pkgs.iproute2}/bin/ip a
             rm -f /run/net-ready
           '';
