@@ -29,8 +29,7 @@ let
         };
       };
     })
-  ] ++ modules_from_dir
-    ++ (if configFile == null then [
+  ] ++ (if configFile == null then [
     ({ config, lib, pkgs, ... }: {
       config = {
         systemd = import ./systemd.nix {
@@ -42,7 +41,7 @@ let
     ({ config, pkgs, lib, ... }: {
       ${global.moduleName}.${id} = import configFile { inherit config lib pkgs properties; };
     })
-  ]);
+  ] ++ modules_from_dir);
   modules_dir = work_dir + "/modules";
   modules_from_dir =
     lib.filter (x: x != null)
