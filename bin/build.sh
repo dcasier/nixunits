@@ -46,13 +46,15 @@ while getopts "dfi:j:n:hsr" opt; do
 done
 shift "$((OPTIND-1))"
 
-if [ -n "$PARAMS_FILE" ]; then
+if [ -z "$id" ] && [ -n "$PARAMS_FILE" ]; then
   if is_url "$PARAMS_FILE"; then
     id="$(curl --fail -sL "$PARAMS_FILE" | _JQ_SED_ -r '.id')"
   else
     id=$(_JQ_SED_ -r '.id' "$PARAMS_FILE")
   fi
-elif [ -z "$id" ]; then
+fi
+
+if [ -z "$id" ]; then
   echo "- - - id missing - - -"
   usage 1
 fi
@@ -156,7 +158,7 @@ build_container() {
 
   local props="builtins.readFile $PARAMS_FILE"
   local cmd=(nix build --no-link --print-out-paths "${ARGS[@]}" --store "$C_TMP/merged" \
-               --expr  "($MK_CONTAINER {configFile = $C_FUTUR_NIX; id = $id; propertiesJSON = $props;})")
+               --expr  "($MK_CONTAINER {configFile = $C_FUTUR_NIX; id = \"$id\"; propertiesJSON = $props;})")
 
   echo "Build container $id"
   [ "$DEBUG" = true ] && echo "${cmd[@]}"

@@ -19,7 +19,7 @@
     lib = forAllSystems (pkgs: {
       mkContainer = { configFile, id ? null, propertiesJSON }:
         pkgs.callPackage ./nix/default.nix {
-            inherit configFile pkgs propertiesJSON;
+            inherit configFile id pkgs propertiesJSON;
         };
     });
 
