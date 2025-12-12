@@ -7,7 +7,7 @@
 
 let
   global = import ./global.nix {inherit lib pkgs;};
-  id = id or properties.id;
+  id = if id != null then id else properties.id;
   lib = pkgs.lib;
 
   modules = [
