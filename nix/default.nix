@@ -7,7 +7,7 @@
 
 let
   global = import ./global.nix {inherit lib pkgs;};
-  id = if id != null then id else properties.id;
+  id_ = if id != null then id else properties.id;
   lib = pkgs.lib;
 
   modules = [
@@ -40,7 +40,7 @@ let
     })
   ] else [
     ({ config, pkgs, lib, ... }: {
-      ${global.moduleName}.${id} = import configFile { inherit config lib pkgs properties; };
+      ${global.moduleName}.${id_} = import configFile { inherit config lib pkgs properties; };
     })
   ] ++ modules_from_dir);
   modules_dir = work_dir + "/modules";
@@ -64,7 +64,7 @@ let
   system = (
     lib.evalModules({
       inherit modules;
-      specialArgs = { inherit global id pkgs; };
+      specialArgs = { inherit global pkgs; id = id_; };
     })
   ).config.system;
   work_dir = "/var/lib/nixunits";
