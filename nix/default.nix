@@ -40,7 +40,7 @@ let
     })
   ] else [
     ({ config, pkgs, lib, ... }: {
-      ${global.moduleName}.${id_} = import configFile { inherit config lib pkgs properties; };
+      ${global.moduleName}.${id_} = import configFile { inherit config lib pkgs properties; id = id_; };
     })
   ] ++ modules_from_dir);
   modules_dir = work_dir + "/modules";
