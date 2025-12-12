@@ -4,7 +4,7 @@ set -euo pipefail
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
 usage() {
-  echo "Usage : nixunits build -i <ID> OR -j <parameters file> [options]"
+  echo "Usage : nixunits build [-i <ID>] -j <parameters file> [options]"
   echo "Available options:"
   echo "  -d  debug (show-trace)"
   echo "  -f  force (build)"
@@ -52,6 +52,9 @@ if [ -n "$PARAMS_FILE" ]; then
   else
     id=$(_JQ_SED_ -r '.id' "$PARAMS_FILE")
   fi
+elif [ -z "$id" ]; then
+  echo "- - - id missing - - -"
+  usage 1
 fi
 
 in_nixos_failed "$id"
@@ -127,7 +130,7 @@ uid_alloc() {
 build_store() {
   local props='{\"id\": \"dummy\"}'
   local cmd=(nix build "${ARGS[@]}" --out-link "$GCROOT_PATH" --store "$STORE_CONTAINERS" \
-               --expr  "($MK_CONTAINER {configFile = $C_FUTUR_NIX; propertiesJSON = \"$props\";})")
+               --expr  "($MK_CONTAINER {configFile = $C_FUTUR_NIX;  propertiesJSON = \"$props\";})")
 
   echo "Build store for $id"
   [ "$DEBUG" = true ] && echo "${cmd[@]}"
@@ -153,7 +156,7 @@ build_container() {
 
   local props="builtins.readFile $PARAMS_FILE"
   local cmd=(nix build --no-link --print-out-paths "${ARGS[@]}" --store "$C_TMP/merged" \
-               --expr  "($MK_CONTAINER {configFile = $C_FUTUR_NIX; propertiesJSON = $props;})")
+               --expr  "($MK_CONTAINER {configFile = $C_FUTUR_NIX; id = $id; propertiesJSON = $props;})")
 
   echo "Build container $id"
   [ "$DEBUG" = true ] && echo "${cmd[@]}"

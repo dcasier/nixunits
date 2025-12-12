@@ -1,12 +1,13 @@
 {
   configFile ? null
+, id ? null
 , propertiesJSON ? null
 , pkgs
 }:
 
 let
   global = import ./global.nix {inherit lib pkgs;};
-  id = properties.id;
+  id = id or properties.id;
   lib = pkgs.lib;
 
   modules = [

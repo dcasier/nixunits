@@ -17,7 +17,7 @@
     nixosModules.default = import ./module.nix;
 
     lib = forAllSystems (pkgs: {
-      mkContainer = { configFile, propertiesJSON }:
+      mkContainer = { configFile, id ? null, propertiesJSON }:
         pkgs.callPackage ./nix/default.nix {
             inherit configFile pkgs propertiesJSON;
         };

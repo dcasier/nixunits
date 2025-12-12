@@ -112,7 +112,7 @@ lock_acquire() {
             rm -f "$lock_path"
             continue
         fi
-        sleep 0.1
+        sleep 0.5
     done
     echo "Lock acquired: $lock_path by $$"
 }
