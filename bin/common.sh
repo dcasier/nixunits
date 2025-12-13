@@ -64,7 +64,7 @@ interface_env() {
   done
   if [ -n "$2" ]; then
     if [ "$ETH_TYPE" = "macvlan" ]; then
-      INTERFACE="$(macvlan_get "$INTERFACE")"
+      INTERFACE="$(macvlan_get)"
     fi
   fi
   export INTERFACE
@@ -142,7 +142,12 @@ log_block_msg() {
 }
 
 macvlan_get() {
-  ip -j -d link show type macvlan |jq --arg eth "$1" '.[] | select(.link==$eth) | .ifname'
+  # ip -j -d link show type macvlan |jq --arg eth "$1" '.[] | select(.link==$eth) | .ifname'
+  if [ "$VRID" != "" ];then
+    echo "mv-${INTERFACE}-${VRID}"
+  else
+    echo "mv-$INTERFACE"
+  fi
 }
 
 ovs_port_exists() {

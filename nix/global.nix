@@ -129,7 +129,18 @@ let
           + optionalString (vethEnabled) " --network-veth"
           + lib.concatStringsSep " " (
             lib.mapAttrsToList
-              (name: _: " --network-interface=${name}")
+              (name: iface: let
+                  n_ =
+                    if iface.type == "macvlan" then
+                      if iface.vrid != "" then
+                        "mv-${name}-${iface.vrid}"
+                      else
+                        "mv-${name}"
+                    else
+                      name;
+                in
+                  " --network-interface=${n_}"
+              )
               nonVethIfaces
           )
         } --overlay-ro=/var/lib/nixunits/store/default/root/nix/store/:/var/lib/nixunits/containers/${name}/root/nix/store:/nix/store"
@@ -143,6 +154,7 @@ let
               NIXUNITS__ETH__${name}__ETH_TYPE=${iface.type}
               NIXUNITS__ETH__${name}__OVS_BRIDGE=${iface.ovs.bridge}
               NIXUNITS__ETH__${name}__OVS_VLAN=${toString iface.ovs.vlan}
+              NIXUNITS__ETH__${name}__VRID=${iface.vrid}
             '')
             cfg.network.interfaces
         )}
@@ -266,10 +278,6 @@ in with lib; {
                           default = "";
                           type = str;
                         };
-                        type = mkOption {
-                          default = "";
-                          type = str;
-                        };
                         ovs = mkOption {
                           default = {};
                           type = submodule {
@@ -284,6 +292,14 @@ in with lib; {
                               };
                             };
                           };
+                        };
+                        type = mkOption {
+                          default = "";
+                          type = str;
+                        };
+                        vrid = mkOption {
+                          default = "";
+                          type = str;
                         };
                       };
                     });

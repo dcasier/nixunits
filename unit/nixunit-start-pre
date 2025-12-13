@@ -25,11 +25,9 @@ interface_check() {
     fi
   fi
   if [ "$ETH_TYPE" = "macvlan" ]; then
-    mv_="$(macvlan_get "$INTERFACE")"
-    if [ -z "$mv_" ]; then
-      RAND=$(tr -dc a-z0-9 </dev/urandom | head -c 6)
-      ip link add "vrrp-$RAND" link "$INTERFACE" addrgenmode random type macvlan mode bridge
-      mv_="$(macvlan_get "$INTERFACE")"
+    mv_="$(macvlan_get)"
+    if ! ip link show "$mv_" >/dev/null 2>&1; then
+      ip link add "$mv_" link "$INTERFACE" addrgenmode random type macvlan mode bridge
     fi
     export INTERFACE="$mv_"
   fi
