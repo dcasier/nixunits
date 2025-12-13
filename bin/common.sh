@@ -64,7 +64,7 @@ interface_env() {
     src="NIXUNITS__ETH__${INTERFACE}__${var}"
     export "${var}=${!src}"
   done
-  if [ -n "$2" ]; then
+  if [ -z "$2" ]; then
     if [ "$ETH_TYPE" = "macvlan" ]; then
       INTERFACE="$(macvlan_get)"
     fi

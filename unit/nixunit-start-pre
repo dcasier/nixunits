@@ -27,7 +27,11 @@ interface_check() {
   if [ "$ETH_TYPE" = "macvlan" ]; then
     mv_="$(macvlan_get)"
     if ! ip link show "$mv_" >/dev/null 2>&1; then
-      ip link add "$mv_" link "$INTERFACE" addrgenmode random type macvlan mode bridge
+      ip link add "$mv_" link "$INTERFACE" type macvlan mode bridge
+      ip link set "$mv_" addrgenmode random
+      if [ -n "$VRID" ]; then
+        ip link set dev "$mv_" address "$(printf "00:00:5e:00:02:%02x" "$VRID")"
+      fi
     fi
     export INTERFACE="$mv_"
   fi
