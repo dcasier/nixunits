@@ -1,5 +1,5 @@
-PATH="__AWK_BIN_SED__:__FIND_BIN_SED__:__GREP_BIN_SED__:__INOTIFY_BIN_SED__:__PSTREE_BIN_SED__:__SYSTEMD_BIN_SED__:/run/current-system/sw/bin/:$PATH"
-which nix >/dev/null || PATH="/nix/var/nix/profiles/per-user/root/profile/bin:$PATH"
+PATH="__AWK_BIN_SED__:__FIND_BIN_SED__:__GREP_BIN_SED__:__INOTIFY_BIN_SED__:__PSTREE_BIN_SED__:__SYSTEMD_BIN_SED__:/run/current-system/sw/bin/:/nix/var/nix/profiles/per-user/root/profile/bin:$PATH"
+# which nix >/dev/null || PATH="/nix/var/nix/profiles/per-user/root/profile/bin:$PATH"
 
 export PATH
 
@@ -46,12 +46,14 @@ host_exec() {
 }
 
 INTERFACE_FIELDS=(
+  ETH_TYPE
   HOST_IP4
   HOST_IP6
   IP4
   IP6
   OVS_BRIDGE
   OVS_VLAN
+  VRID
 )
 
 interface_env() {
