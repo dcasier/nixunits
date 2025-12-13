@@ -140,6 +140,7 @@ let
               NIXUNITS__ETH__${name}__HOST_IP6=${iface.hostIp6}
               NIXUNITS__ETH__${name}__IP4=${iface.ip4}
               NIXUNITS__ETH__${name}__IP6=${iface.ip6}
+              NIXUNITS__ETH__${name}__ETH_TYPE=${iface.type}
               NIXUNITS__ETH__${name}__OVS_BRIDGE=${iface.ovs.bridge}
               NIXUNITS__ETH__${name}__OVS_VLAN=${toString iface.ovs.vlan}
             '')
@@ -262,6 +263,10 @@ in with lib; {
                           type = str;
                         };
                         ip6 = mkOption {
+                          default = "";
+                          type = str;
+                        };
+                        type = mkOption {
                           default = "";
                           type = str;
                         };

@@ -55,13 +55,23 @@ INTERFACE_FIELDS=(
 )
 
 interface_env() {
-  export INTERFACE="$1"
+  INTERFACE="$1"
   echo "Load interface - $INTERFACE -" >&2
   local var src
   for var in "${INTERFACE_FIELDS[@]}"; do
     src="NIXUNITS__ETH__${INTERFACE}__${var}"
     export "${var}=${!src}"
   done
+  if [ "$ETH_TYPE" = "macvlan" ]; then
+    mv_="$(ip -j -d link show type macvlan |jq --arg eth "$INTERFACE" '.[] | select(.link==$eth) | .ifname')"
+    if [ -z "$mv_" ]; then
+      RAND=$(tr -dc a-z0-9 </dev/urandom | head -c 6)
+      ip link add "vrrp-$RAND" link "$INTERFACE" addrgenmode random type macvlan mode bridge
+      mv_="$(ip -j -d link show type macvlan |jq --arg eth "$INTERFACE" '.[] | select(.link==$eth) | .ifname')"
+    fi
+    INTERFACE="$mv_"
+  fi
+  export INTERFACE
 }
 
 interface_exists() {

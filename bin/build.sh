@@ -54,7 +54,7 @@ if [ -z "$id" ] && [ -n "$PARAMS_FILE" ]; then
   fi
 fi
 
-if [ -z "$id" ]; then
+if [ -z "$id" ] || [ "$id" = "null" ]; then
   echo "- - - id missing - - -"
   usage 1
 fi
