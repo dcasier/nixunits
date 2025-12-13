@@ -12,7 +12,7 @@ UID_ROOT=$(uid_root "$ID")
 MAX_UID=$(( UID_ROOT + 65535 ))
 
 interface_check() {
-  interface_env "$1"
+  interface_env "$1" "false"
   if ! interface_exists "$INTERFACE"; then
     if ovs_port_exists "$INTERFACE" true; then
       if [ -n "$OVS_BRIDGE" ]; then
@@ -23,6 +23,15 @@ interface_check() {
       log_msg "Create OVS interface - $INTERFACE - "
       ovs_port_add "$INTERFACE"
     fi
+  fi
+  if [ "$ETH_TYPE" = "macvlan" ]; then
+    mv_="$(macvlan_get "$INTERFACE")"
+    if [ -z "$mv_" ]; then
+      RAND=$(tr -dc a-z0-9 </dev/urandom | head -c 6)
+      ip link add "vrrp-$RAND" link "$INTERFACE" addrgenmode random type macvlan mode bridge
+      mv_="$(macvlan_get "$INTERFACE")"
+    fi
+    export INTERFACE="$mv_"
   fi
 }
 

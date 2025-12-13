@@ -62,14 +62,10 @@ interface_env() {
     src="NIXUNITS__ETH__${INTERFACE}__${var}"
     export "${var}=${!src}"
   done
-  if [ "$ETH_TYPE" = "macvlan" ]; then
-    mv_="$(ip -j -d link show type macvlan |jq --arg eth "$INTERFACE" '.[] | select(.link==$eth) | .ifname')"
-    if [ -z "$mv_" ]; then
-      RAND=$(tr -dc a-z0-9 </dev/urandom | head -c 6)
-      ip link add "vrrp-$RAND" link "$INTERFACE" addrgenmode random type macvlan mode bridge
-      mv_="$(ip -j -d link show type macvlan |jq --arg eth "$INTERFACE" '.[] | select(.link==$eth) | .ifname')"
+  if [ -n "$2" ]; then
+    if [ "$ETH_TYPE" = "macvlan" ]; then
+      INTERFACE="$(macvlan_get "$INTERFACE")"
     fi
-    INTERFACE="$mv_"
   fi
   export INTERFACE
 }
@@ -104,7 +100,6 @@ in_nixos_failed() {
 ip6_crc32() { echo "$(_ip6_crc32 "$1"):2"; }
 
 ip6_crc32_host() { echo "$(_ip6_crc32 "$1"):1"; }
-
 
 is_url() {
     case "$1" in
@@ -144,6 +139,10 @@ log_block_msg() {
   log_msg "########################################"
   log_msg "# $1"
   log_msg "########################################"
+}
+
+macvlan_get() {
+  ip -j -d link show type macvlan |jq --arg eth "$1" '.[] | select(.link==$eth) | .ifname'
 }
 
 ovs_port_exists() {
