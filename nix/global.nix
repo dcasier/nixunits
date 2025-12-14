@@ -59,8 +59,18 @@ let
             done
             echo "###"
             echo "### Network ready"
-            while ${pkgs.iproute2}/bin/ip -6 a| grep -q "tentative"; do
-                sleep 0.5
+            while true; do
+                res=$(${pkgs.iproute2}/bin/ip -6j addr | ${pkgs.jq}/bin/jq -r '
+                  .[]
+                  | select(
+                      (.proto_down | not)
+                      and any(.addr_info[]?; .tentative==true)
+                    )
+                  | .ifname
+                ')
+
+                [ -z "$res" ] && break
+                sleep 1
             done
             sleep 2
 
@@ -129,17 +139,14 @@ let
           + optionalString (vethEnabled) " --network-veth"
           + lib.concatStringsSep " " (
             lib.mapAttrsToList
-              (name: iface: let
-                  n_ =
-                    if iface.type == "macvlan" then
-                      if iface.vrid != "" then
-                        "mv-${name}-${iface.vrid}"
-                      else
-                        "mv-${name}"
-                    else
-                      name;
-                in
-                  " --network-interface=${n_}"
+              (name: iface:
+                if iface.type == "macvlan" then
+                  (let
+                    n_ = (if iface.vrid != "" then "mv-${name}-${iface.vrid}" else "mv-${name}");
+                  in
+                  " --network-interface=${n_} --network-interface=${name}")
+                else
+                  " --network-interface=${name}"
               )
               nonVethIfaces
           )

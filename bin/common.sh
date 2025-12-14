@@ -57,19 +57,13 @@ INTERFACE_FIELDS=(
 )
 
 interface_env() {
-  INTERFACE="$1"
+  export INTERFACE="$1"
   echo "Load interface - $INTERFACE -" >&2
   local var src
   for var in "${INTERFACE_FIELDS[@]}"; do
     src="NIXUNITS__ETH__${INTERFACE}__${var}"
     export "${var}=${!src}"
   done
-  if [ -z "$2" ]; then
-    if [ "$ETH_TYPE" = "macvlan" ]; then
-      INTERFACE="$(macvlan_get)"
-    fi
-  fi
-  export INTERFACE
 }
 
 interface_exists() {
