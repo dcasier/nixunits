@@ -140,46 +140,48 @@ let
           + lib.concatStringsSep " " (
             lib.mapAttrsToList
               (name: iface:
-                if iface.macvlan != null then
-                  (let
-                    mv = iface.macvlan;
-                    n_ = (if mv.vrid != "" then "mv-${name}-${mv.vrid}" else "mv-${name}");
-                  in
-                  " --network-interface=${n_} --network-interface=${name}")
-                else
-                  " --network-interface=${name}"
+                let
+                  mv = iface.macvlan;
+                  n_ =
+                    if mv != null && mv.vrid != ""
+                    then "mv-${name}-${mv.vrid}"
+                    else if mv != null
+                    then "mv-${name}"
+                    else name;
+                in
+                " --network-interface=${n_}"
+                + lib.optionalString (mv != null) " --network-interface=${name}"
               )
               nonVethIfaces
           )
         } --overlay-ro=/var/lib/nixunits/store/default/root/nix/store/:/var/lib/nixunits/containers/${name}/root/nix/store:/nix/store"
         ${lib.concatStringsSep "\n" (
-          let
-          mv = iface.macvlan;
-            mv_eth = (
-              if mv != null then
-                (if mv.vrid != "" then
-                  "mv-${name}-${mv.vrid}"
-                else
-                  "mv-${name}")
-              else "") ;
-            mv_ip4 = (if mv != null && mv.ip4 != "" then mv.ip4 else "");
-            mv_ip6 = (if mv != null && mv.ip6 != "" then mv.ip6 else "");
-            mv_vrid = (if mv != null && mv.vrid != "" then mv.vrid else "");
-          in
-            lib.mapAttrsToList
-              (name: iface: ''
-                NIXUNITS__ETH__${name}__HOST_IP4=${iface.hostIp4}
-                NIXUNITS__ETH__${name}__HOST_IP6=${iface.hostIp6}
-                NIXUNITS__ETH__${name}__IP4=${iface.ip4}
-                NIXUNITS__ETH__${name}__IP6=${iface.ip6}
-                NIXUNITS__ETH__${name}__MV=${mv_eth}
-                NIXUNITS__ETH__${name}__MV_IP4=${mv_ip4}
-                NIXUNITS__ETH__${name}__MV_IP6=${mv_ip6}
-                NIXUNITS__ETH__${name}__MV_VRID=${mv_vrid}
-                NIXUNITS__ETH__${name}__OVS_BRIDGE=${iface.ovs.bridge}
-                NIXUNITS__ETH__${name}__OVS_VLAN=${toString iface.ovs.vlan}
-              '')
-              cfg.network.interfaces
+          lib.mapAttrsToList
+            (name: iface: let
+              mv = iface.macvlan;
+                mv_eth = (
+                  if mv != null then
+                    (if mv.vrid != "" then
+                      "mv-${name}-${mv.vrid}"
+                    else
+                      "mv-${name}")
+                  else "") ;
+                mv_ip4 = (if mv != null && mv.ip4 != "" then mv.ip4 else "");
+                mv_ip6 = (if mv != null && mv.ip6 != "" then mv.ip6 else "");
+                mv_vrid = (if mv != null && mv.vrid != "" then mv.vrid else "");
+              in ''
+                  NIXUNITS__ETH__${name}__HOST_IP4=${iface.hostIp4}
+                  NIXUNITS__ETH__${name}__HOST_IP6=${iface.hostIp6}
+                  NIXUNITS__ETH__${name}__IP4=${iface.ip4}
+                  NIXUNITS__ETH__${name}__IP6=${iface.ip6}
+                  NIXUNITS__ETH__${name}__MV=${mv_eth}
+                  NIXUNITS__ETH__${name}__MV_IP4=${mv_ip4}
+                  NIXUNITS__ETH__${name}__MV_IP6=${mv_ip6}
+                  NIXUNITS__ETH__${name}__MV_VRID=${mv_vrid}
+                  NIXUNITS__ETH__${name}__OVS_BRIDGE=${iface.ovs.bridge}
+                  NIXUNITS__ETH__${name}__OVS_VLAN=${toString iface.ovs.vlan}
+                '')
+                cfg.network.interfaces
         )}
         IP4ROUTE=${cfg.network.ip4route}
         IP6ROUTE=${cfg.network.ip6route}
@@ -301,9 +303,9 @@ in with lib; {
                           default = "";
                           type = str;
                         };
-                        macvlan = nullOr mkOption {
-                          default = null;
-                          type = submodule {
+                        macvlan = mkOption {
+                          default = {};
+                          type = nullOr (submodule {
                             options = {
                               ip4 = mkOption {
                                 default = "";
@@ -318,7 +320,7 @@ in with lib; {
                                 type = str;
                               };
                             };
-                          };
+                          });
                         };
                         ovs = mkOption {
                           default = {};
