@@ -304,7 +304,7 @@ in with lib; {
                           type = str;
                         };
                         macvlan = mkOption {
-                          default = {};
+                          default = null;
                           type = nullOr (submodule {
                             options = {
                               ip4 = mkOption {
