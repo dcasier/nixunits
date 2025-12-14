@@ -47,7 +47,7 @@ interface_ns_set() {
     container_exec "ip -4 a replace $MV_IP4 dev $MV"
   fi
   if [ -n "$MV_IP6" ]; then
-    container_exec "ip -4 a replace $MV_IP6 dev $MV"
+    container_exec "ip -6 a replace $MV_IP6 dev $MV"
   fi
 }
 
