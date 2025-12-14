@@ -43,8 +43,12 @@ interface_ns_set() {
     fi
   fi
 
-  test -n "$MV_IP4" && container_exec "ip -4 a replace $MV_IP4 dev $MV"
-  test -n "$MV_IP6" && container_exec "ip -4 a replace $MV_IP6 dev $MV"
+  if [ -n "$MV_IP4" ]; then
+    container_exec "ip -4 a replace $MV_IP4 dev $MV"
+  fi
+  if [ -n "$MV_IP6" ]; then
+    container_exec "ip -4 a replace $MV_IP6 dev $MV"
+  fi
 }
 
 interface_host_set() {
