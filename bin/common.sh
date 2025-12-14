@@ -51,9 +51,12 @@ INTERFACE_FIELDS=(
   HOST_IP6
   IP4
   IP6
+  MV
+  MV_IP4
+  MV_IP6
+  MV_VRID
   OVS_BRIDGE
   OVS_VLAN
-  VRID
 )
 
 interface_env() {
@@ -135,15 +138,6 @@ log_block_msg() {
   log_msg "########################################"
   log_msg "# $1"
   log_msg "########################################"
-}
-
-macvlan_get() {
-  # ip -j -d link show type macvlan |jq --arg eth "$1" '.[] | select(.link==$eth) | .ifname'
-  if [ "$VRID" != "" ];then
-    echo "mv-${INTERFACE}-${VRID}"
-  else
-    echo "mv-$INTERFACE"
-  fi
 }
 
 ovs_port_exists() {

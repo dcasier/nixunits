@@ -20,28 +20,31 @@ interface_ns_set() {
   container_exec "ip -6 route flush dev $INTERFACE"
   container_exec "ip link set dev $INTERFACE up"
   if [ -n "$IP4" ]; then
-    container_exec "ip -4 a add $IP4 dev $INTERFACE"
+    container_exec "ip -4 a replace $IP4 dev $INTERFACE"
   fi
   if [ -n "$IP6" ]; then
-    container_exec "ip -6 a add $IP6 dev $INTERFACE"
+    container_exec "ip -6 a replace $IP6 dev $INTERFACE"
   fi
 
   if [ -n "$HOST_INTERFACE" ]; then
     if [ -n "$HOST_IP4" ]; then
       if [ "${HOST_IP4#*/}" = "31" ]; then
-        container_exec "ip -4 route add ${HOST_IP4%/*} dev $INTERFACE"
+        container_exec "ip -4 route replace ${HOST_IP4%/*} dev $INTERFACE"
       else
-        container_exec "ip -4 route add $HOST_IP4 dev $INTERFACE"
+        container_exec "ip -4 route replace $HOST_IP4 dev $INTERFACE"
       fi
     fi
     if [ -n "$HOST_IP6" ]; then
       if [ "${HOST_IP6#*/}" = "127" ]; then
-        container_exec "ip -6 route add ${HOST_IP6%/*} dev $INTERFACE"
+        container_exec "ip -6 route replace ${HOST_IP6%/*} dev $INTERFACE"
       else
-        container_exec "ip -6 route add $HOST_IP6 dev $INTERFACE"
+        container_exec "ip -6 route replace $HOST_IP6 dev $INTERFACE"
       fi
     fi
   fi
+
+  test -n "$MV_IP4" && container_exec "ip -4 a replace $MV_IP4 dev $MV"
+  test -n "$MV_IP6" && container_exec "ip -4 a replace $MV_IP6 dev $MV"
 }
 
 interface_host_set() {
