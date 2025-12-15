@@ -13,7 +13,7 @@ MAX_UID=$(( UID_ROOT + 65535 ))
 
 interface_check() {
   interface_env "$1"
-  if ! interface_exists "$INTERFACE"; then
+  if ! interface_exists "$INTERFACE" && [ -n "$OVS_BRIDGE" ] ; then
     if ovs_port_exists "$INTERFACE" true; then
       if [ -n "$OVS_BRIDGE" ]; then
         ovs_port_del "$INTERFACE"
