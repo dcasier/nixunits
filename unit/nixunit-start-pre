@@ -24,9 +24,6 @@ interface_check() {
       ovs_port_add "$INTERFACE"
     fi
   fi
-  if ! interface_exists "$INTERFACE"; then
-    ifup "$INTERFACE"
-  fi
   if [ "$MV" != "" ]; then
     if ! ip link show "$MV" >/dev/null 2>&1; then
       ip link add "$MV" link "$INTERFACE" type macvlan mode bridge
