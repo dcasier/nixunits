@@ -22,7 +22,24 @@ in {
         extraHosts = dummy;
         proxy.envVars = optionValue {};
       };
-      security = dummy;
+      security = {
+        polkit = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+          };
+        };
+        pam = {
+          enable = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+          };
+          services = lib.mkOption {
+            type = lib.types.attrs;
+            default = {};
+          };
+        };
+      };
       services = {
         dbus = dummy;
         logrotate = dummy;
@@ -38,7 +55,7 @@ in {
         nssModules = dummy;
         path = optionValue "";
         requiredKernelConfig = dummy;
-        stateVersion = optionValue "24.11";
+        stateVersion = optionValue "25.11";
       };
       systemd = {
         oomd = dummy;

@@ -17,6 +17,7 @@ let
     (_modules + "/system/etc/etc.nix")
     (import ./tmpfiles.nix)
     (import ./dummy_options.nix)
+    (_modules + "/security/wrappers")
     ({ config, lib, pkgs, ... }: with lib; {
       config = global.conf config.${global.moduleName};
       options = global.options // {

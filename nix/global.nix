@@ -87,15 +87,12 @@ let
         "dbus-org.freedesktop.login1.service"
         "logrotate-checkconf.service"
         "run-initramfs.mount"
-        "run-wrappers.mount"
         "systemd-bootctl@.service"
         "systemd-bootctl.socket"
         "systemd-hibernate-clear.service"
         "systemd-logind.service"
         "systemd-nspawn.service"
         "systemd-nspawn@.service"
-        # "systemd-tmpfiles-setup.service"
-        "suid-sgid-wrappers.service"
         "systemd-user-sessions.service"
       ];
       targets.network-pre.after = [ "wait-net-ready.service" ];
