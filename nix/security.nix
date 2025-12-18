@@ -3,9 +3,11 @@
   cfgValid = cfg: let
     deps = cfg.systemdDeps or [];
     names = (lib.attrNames (cfg.services or {})) ++ deps;
-    patch = lib.foldl'
-      (acc: name: acc // { systemd.services.${name} = systemd ; })
-      {} names;
+    patch = {
+      systemd = {
+        services = lib.genAttrs names (_: systemd);
+      };
+    };
   in
      recursiveUpdate cfg patch;
 

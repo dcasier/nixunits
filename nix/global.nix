@@ -95,10 +95,19 @@ let
         "systemd-nspawn@.service"
         "systemd-user-sessions.service"
       ];
-      targets.network-pre.after = [ "wait-net-ready.service" ];
-      targets.network-pre.wants = [ "wait-net-ready.service" ];
-      targets.network-online.after = [ "wait-net-ready.service" ];
-      targets.network-online.wants = [ "wait-net-ready.service" ];
+      targets = let
+        wrr =  {
+          after = [ "wait-net-ready.service" ];
+          wants = [ "wait-net-ready.service" ];
+        };
+      in {
+        network-pre = wrr;
+        network-online = wrr;
+        sysinit = {
+          after = [ "network-online.target" ];
+          wants = [ "network-online.target" ];
+        };
+      };
     };
   };
 
