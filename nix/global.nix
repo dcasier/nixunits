@@ -60,7 +60,7 @@ let
             echo "###"
             echo "### Network ready"
             while true; do
-                res=$(${pkgs.iproute2}/bin/ip -6j addr | ${pkgs.jq}/bin/jq -r '
+                res=$(${pkgs.iproute2}/bin/ip -6 -j addr | ${pkgs.jq}/bin/jq -r '
                   .[]
                   | select(
                       (.proto_down | not)
@@ -194,6 +194,7 @@ let
         NAME=${name}
         ${optionalString (extraFile != null) "EXTRA_FILE=${extraFile}"}
         ${optionalString (nftFile != null) "NFT_FILE=${nftFile}"}
+        ${optionalString (cfg.preCheckNetReadyScript != null) "CHECK_NET_READY=${cfg.preCheckNetReadyScript}"}
         ${optionalString (sysctlFile != null) "SYSCTL_FILE=${sysctlFile}"}
         SYSTEM_PATH=${cfg.config.system.build.toplevel}
       '';
@@ -383,6 +384,11 @@ in with lib; {
 
             nix_service_file = mkOption {
               type = str;
+            };
+
+            preCheckNetReadyScript  = mkOption {
+              default = null;
+              type = types.nullOr types.str;
             };
 
             properties = mkOption {

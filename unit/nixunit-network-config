@@ -5,6 +5,8 @@ trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 # shellcheck disable=SC1091
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
+export PATH=$PATH:_OPENVSWITCH_PATH_SED_/bin
+
 NFT=_NFT_BIN_SED_
 SH="$SYSTEM_PATH/sw/bin/sh"
 
@@ -139,6 +141,12 @@ if [ -n "$IP6ROUTE" ]; then
   else
     container_exec "ip -6 route add default via $IP6ROUTE"
   fi
+fi
+
+if [ -n "$CHECK_NET_READY" ];then
+  log_msg "Eval script network ready : $CHECK_NET_READY"
+  $CHECK_NET_READY
+  log_msg "Network ready"
 fi
 
 nsenter --target "$NS_PID" --all -- "$SH" -c "> /run/net-ready"

@@ -65,7 +65,6 @@ case "$ACTION" in
   h|help)
     usage 0;;
   *)
-    echo "=> machinectl $ACTION $*"
     # shellcheck disable=SC2068
     machinectl "$ACTION" $@;;
 esac

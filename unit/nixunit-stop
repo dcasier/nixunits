@@ -2,6 +2,7 @@
 set -eo pipefail
 
 . _NIXUNITS_PATH_SED_/bin/common.sh
+export PATH=$PATH:_OPENVSWITCH_PATH_SED_/bin
 
 interface_clean() {
   interface_env "$1"
