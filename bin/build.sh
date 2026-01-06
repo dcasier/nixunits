@@ -27,17 +27,20 @@ ARGS=(--impure)
 DEBUG=false
 FORCE=false
 id=""
+# TODO
+NIXPKGS="github:nixos/nixpkgs/nixos-25.11"
 NIX_FILE=""
 PARAMS_FILE=""
 STARTS_ARGS=()
 
-while getopts "dfi:j:n:hsr" opt; do
+while getopts "dfi:j:n:p:hsr" opt; do
   case $opt in
     d) DEBUG=true; ARGS+=("--show-trace");;
     f) FORCE=true;;
     i) id=$OPTARG;;
     j) PARAMS_FILE=$OPTARG;;
     n) NIX_FILE=$OPTARG;;
+    p) NIXPKGS=$OPTARG;;
     r) STARTS_ARGS+=(-s -r);;
     s) STARTS_ARGS+=(-s);;
     h) usage;;

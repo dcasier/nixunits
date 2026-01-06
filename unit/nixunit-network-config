@@ -145,7 +145,7 @@ fi
 
 if [ -n "$CHECK_NET_READY" ];then
   log_msg "Eval script network ready : $CHECK_NET_READY"
-  $CHECK_NET_READY
+  $CHECK_NET_READY "$NAME"
   log_msg "Network ready"
 fi
 
