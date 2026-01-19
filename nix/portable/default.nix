@@ -1,7 +1,7 @@
 { lib, pkgs, ... }:
 let
-  nixunits = pkgs.callPackage ../../nixunits.nix { inherit (pkgs) lib stdenv pkgs; };
   installTool = pkgs.callPackage ./install.nix { inherit lib pkgs sys nixunits; };
+  nixunits = pkgs.callPackage ../../nixunits.nix { inherit (pkgs) lib stdenv pkgs; };
   sys = pkgs.callPackage ../default.nix { inherit pkgs; };
 in
 pkgs.stdenv.mkDerivation {

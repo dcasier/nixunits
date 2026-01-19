@@ -29,8 +29,8 @@ interface_check() {
       ip link add "$MV" link "$INTERFACE" type macvlan mode bridge
     fi
     ip link set "$MV" addrgenmode random
-      if [ -n "$VRID" ]; then
-        ip link set dev "$MV" address "$(printf "00:00:5e:00:02:%02x" "$VRID")"
+      if [ -n "$MV_VRID" ]; then
+        ip link set dev "$MV" address "$(printf "00:00:5e:00:02:%02x" "$MV_VRID")"
       fi
   fi
 }
