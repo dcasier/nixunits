@@ -52,6 +52,7 @@ switch() {
 
   install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -d "$CONTAINER_ROOT"
   install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -d "$CONTAINER_ROOT/usr"
+  chown -R "${CONTAINER_RID}:${CONTAINER_RID}" "$C_FUTUR/nix"
 
   rm -f "$C_FUTUR_OK"
   mv "$C_FUTUR/nix" "$CONTAINER_ROOT"
