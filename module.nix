@@ -21,7 +21,8 @@ in {
 
     security.sudo.extraRules = [{
       commands = [{
-        command = "${nixunits}/bin/nixunits";
+        # command = "${nixunits}/bin/nixunits";
+        command = "/run/current-system/sw/bin/nixunits";
         options = [ "NOPASSWD" ];
       }];
       groups = [ "nixunits" ];
