@@ -20,6 +20,7 @@ test "$id" = "-h" && usage 0
 test "$id" = "help" && usage 0
 test "$id" = "--help" && usage 0
 shift
+validate_id "$id"
 
 while getopts "h" opt; do
   case $opt in
@@ -44,4 +45,3 @@ mkdir -p "${SYSTEMD_PATH}/machine-${id}.scope.wants" ${SYSTEMD_PATH}/machines.ta
 ln -fs /etc/systemd/system/nixunits-network@.service "${SYSTEMD_PATH}/machine-${id}.scope.wants/$_unit_net"
 ln -fs /etc/systemd/system/nixunits@.service "${SYSTEMD_PATH}/multi-user.target.wants/$_unit"
 systemctl daemon-reload
-

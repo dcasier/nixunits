@@ -62,6 +62,7 @@ if [ -z "$id" ] || [ "$id" = "null" ]; then
   usage 1
 fi
 
+validate_id "$id"
 in_nixos_failed "$id"
 container_env "$id"
 

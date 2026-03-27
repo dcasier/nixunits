@@ -5,6 +5,7 @@ set -e
 
 id="$1"
 shift
+validate_id "$id"
 
 NET=false
 QUIET=false

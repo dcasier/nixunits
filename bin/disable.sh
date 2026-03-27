@@ -20,6 +20,7 @@ test "$id" = "-h" && usage 0
 test "$id" = "help" && usage 0
 test "$id" = "--help" && usage 0
 shift
+validate_id "$id"
 
 while getopts "h" opt; do
   case $opt in
@@ -44,4 +45,3 @@ test -f "${SYSTEMD_PATH}/multi-user.target.wants/$_unit" && rm "${SYSTEMD_PATH}/
 test -f "${SYSTEMD_PATH}/machine-${id}.scope.wants/$_unit_net" && rm "${SYSTEMD_PATH}/machine-${id}.scope.wants/$_unit_net" || true
 test -d "${SYSTEMD_PATH}/machine-${id}.scope.wants" && rmdir "${SYSTEMD_PATH}/machine-${id}.scope.wants" || true
 systemctl daemon-reload
-

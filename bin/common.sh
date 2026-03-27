@@ -213,6 +213,13 @@ shell_netns() {
 }
 
 unit_dir() { echo "$PATH_CONTAINERS/$1"; }
+validate_id() {
+  local id="$1"
+  if [[ ! "$id" =~ ^[A-Za-z0-9_]+$ ]]; then
+    echo "Error: invalid container id '$id'. Allowed: [A-Za-z0-9_]" >&2
+    exit 1
+  fi
+}
 uid_root() {
   skip="$(awk -v id="$1" '$1==id {print $2}' "$UID_INV")"
   [ "$skip" != "" ] && echo $(( $skip * 65536))

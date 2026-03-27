@@ -17,6 +17,7 @@ test $# -eq 0 && usage 1
 id=$1
 [[ "$1" =~ ^(-h|--help)$ ]] && usage 0
 shift
+validate_id "$id"
 
 
 NIX_FILE=""
