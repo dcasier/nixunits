@@ -18,6 +18,15 @@ in {
 
     environment.systemPackages = [ nixunits ];
     networking.dhcpcd.denyInterfaces = [ "ve-*" "vb-*" ];
+
+    security.sudo.extraRules = [{
+      commands = [{
+        command = "${nixunits}/bin/nixunits";
+        options = [ "NOPASSWD" ];
+      }];
+      groups = [ "nixunits" ];
+    }];
+
     services.udev.extraRules = optionalString config.networking.networkmanager.enable ''
       # Don't manage interfaces created by nspawn.
       ENV{INTERFACE}=="v[eb]-*", ENV{NM_UNMANAGED}="1"
