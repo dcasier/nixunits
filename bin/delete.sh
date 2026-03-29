@@ -19,7 +19,6 @@ usage() {
 test $# -eq 0 && usage 1
 id=$1
 shift
-validate_id "$id"
 
 FORCE=false
 RECURSIVE=false
@@ -63,7 +62,8 @@ then
 fi
 
 _NIXUNITS_PATH_SED_/bin/disable.sh "$id"
-systemctl stop "nixunits@$id.service"
+systemctl stop "nixunits@$id.service" "nixunits-network@$id.service" 2>/dev/null || true
+systemctl reset-failed "nixunits@$id.service" "nixunits-network@$id.service" 2>/dev/null || true
 
 lock_acquire
 trap cleanup EXIT
