@@ -65,6 +65,10 @@ _NIXUNITS_PATH_SED_/bin/disable.sh "$id"
 systemctl stop "nixunits@$id.service" "nixunits-network@$id.service" 2>/dev/null || true
 systemctl reset-failed "nixunits@$id.service" "nixunits-network@$id.service" 2>/dev/null || true
 
+for iface in $(interfaces_list); do
+  interface_clean "$iface"
+done
+
 lock_acquire
 trap cleanup EXIT
 if $RECURSIVE
