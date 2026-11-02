@@ -41,25 +41,47 @@ done
 
 switch() {
   echo "Switch"
+
+  # The container root is writable by the container: never follow a
+  # symlink planted there (install -d would chown its host target).
+  local d
+  for d in "$CONTAINER_ROOT" "$CONTAINER_ROOT/usr"; do
+    if [ -L "$d" ]; then
+      echo "ERROR: $d is a symlink, refusing to switch" >&2
+      exit 1
+    fi
+  done
+
+  # Slow part first, while the current root is still untouched
+  chown -R "${CONTAINER_RID}:${CONTAINER_RID}" "$C_FUTUR/nix"
+  install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -d "$CONTAINER_ROOT"
+  install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -d "$CONTAINER_ROOT/usr"
+
   mkdir -p "$CONTAINER_OLD"
+  rm -fr "$CONTAINER_OLD/nix"
+  local had_old=false
+  if [ -e "$CONTAINER_ROOT/nix" ] || [ -L "$CONTAINER_ROOT/nix" ]; then
+    mv "$CONTAINER_ROOT/nix" "$CONTAINER_OLD/nix"
+    had_old=true
+  fi
+  if ! mv "$C_FUTUR/nix" "$CONTAINER_ROOT/nix"; then
+    echo "ERROR: switch failed, restoring the previous root" >&2
+    if [ "$had_old" = true ]; then
+      mv "$CONTAINER_OLD/nix" "$CONTAINER_ROOT/nix"
+    fi
+    exit 1
+  fi
+
   if [ -f "$CONTAINER_OK" ]; then
     mv "$CONTAINER_OK" "${CONTAINER_OK}_bkp"
   fi
-  if [ -d "$CONTAINER_ROOT/nix" ]; then
-    rm -fr "$CONTAINER_OLD/nix"
-    mv "$CONTAINER_ROOT/nix" "$CONTAINER_OLD"
-  fi
-  test -f "$CONTAINER_DIR/unit.conf" && rm "$CONTAINER_DIR/unit.conf"
-
-  install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -d "$CONTAINER_ROOT"
-  install -o "$CONTAINER_RID" -g "$CONTAINER_RID" -d "$CONTAINER_ROOT/usr"
-  chown -R "${CONTAINER_RID}:${CONTAINER_RID}" "$C_FUTUR/nix"
-
-  rm -f "$C_FUTUR_OK"
-  mv "$C_FUTUR/nix" "$CONTAINER_ROOT"
-  mv "$C_FUTUR/unit.conf" "$CONTAINER_DIR/unit.conf"
+  mv -f "$C_FUTUR/unit.conf" "$CONTAINER_DIR/unit.conf"
   mv "$C_FUTUR_ARGS" "$CONTAINER_ARGS"
-  mv "$C_FUTUR_NIX" "$CONTAINER_OK"
+  rm -f "$C_FUTUR_OK"
+  # configuration.nix is what build/status compare against (it was never
+  # written before, so change detection and `build` without -n never worked)
+  mv "$C_FUTUR_NIX" "$CONTAINER_NIX"
+  cp "$CONTAINER_NIX" "$CONTAINER_OK"
 }
 
 S=$(_NIXUNITS_PATH_SED_/bin/status.sh "$id")
