@@ -53,6 +53,7 @@ case "$ACTION" in
   nsenter|shell)
     _NIXUNITS_PATH_SED_/bin/nsenter.sh "$@";;
   restart|reboot)
+    id_check "$1"
     if shell_exist "$1"; then
       echo "ERROR: nsenter|shell exist"
       exit 1

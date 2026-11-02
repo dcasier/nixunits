@@ -17,6 +17,7 @@ test $# -eq 0 && usage 1
 id=$1
 [[ "$1" =~ ^(-h|--help)$ ]] && usage 0
 shift
+id_check "$id"
 
 
 NIX_FILE=""
@@ -36,12 +37,11 @@ STARTED=false
 
 IN_NIXOS=$(in_nixos "$id" && echo "true" || echo "false")
 
-STARTED_INFO=$(machinectl -o json | _JQ_SED_ ".[] | select(.machine == \"$id\")" || true)
+STARTED_INFO=$(machinectl -o json | _JQ_SED_ -c --arg id "$id" '.[] | select(.machine == $id)' || true)
 if [ -n "$STARTED_INFO" ]; then
   STARTED=true
-  OS=$(echo "$STARTED_INFO" | _JQ_SED_ -r .os)
-  VERSION=$(echo "$STARTED_INFO" | _JQ_SED_ -r .version)
-  ADDRESSES=$(echo "$STARTED_INFO" | _JQ_SED_ -r '.addresses // ""' | tr '\n' ' ')
+else
+  STARTED_INFO='{}'
 fi
 
 STATUS="initial"
@@ -81,25 +81,27 @@ if [ -f "$NIX_FILE" ];then
   fi
 fi
 
-printf '{\n'
-printf '  "id": "%s",\n' "$id"
-printf '  "started": "%s",\n' "$STARTED"
-printf '  "status": "%s",\n' "$STATUS"
-printf '  "in_nixos": "%s",\n' "$IN_NIXOS"
-printf '  "need_container_build": %s,\n' "$NEED_CONTAINER_BUILD"
-printf '  "need_store_build": %s,\n' "$NEED_STORE_BUILD"
-printf '  "need_switch": %s' "$NEED_SWITCH"
-
-if [ "$STARTED" = true ]; then
-  printf ',\n  "os": "%s",\n' "$OS"
-  printf '  "version": "%s",\n' "$VERSION"
-  printf '  "addresses": ['
-  first=true
-  for a in $ADDRESSES; do
-    $first || printf ', '
-    printf '"%s"' "$a"
-    first=false
-  done
-  printf ']\n'
-fi
-printf '}\n'
+# Built with jq: proper escaping, and real booleans everywhere
+# ("started" and "in_nixos" used to be the strings "true"/"false")
+_JQ_SED_ -n \
+  --arg id "$id" \
+  --arg status "$STATUS" \
+  --argjson started "$STARTED" \
+  --argjson in_nixos "$IN_NIXOS" \
+  --argjson need_container_build "$NEED_CONTAINER_BUILD" \
+  --argjson need_store_build "$NEED_STORE_BUILD" \
+  --argjson need_switch "$NEED_SWITCH" \
+  --argjson info "$STARTED_INFO" \
+  '{
+    id: $id,
+    started: $started,
+    status: $status,
+    in_nixos: $in_nixos,
+    need_container_build: $need_container_build,
+    need_store_build: $need_store_build,
+    need_switch: $need_switch
+  } + (if $started then {
+    os: ($info.os // ""),
+    version: ($info.version // ""),
+    addresses: ([($info.addresses // "") | splits("\\s+")] | map(select(length > 0)))
+  } else {} end)'

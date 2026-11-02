@@ -270,7 +270,7 @@ in {
     '';  
     inherit ip4route ip6route;
   };
-  nspawnArgs = ""; # systemd-nspawn args 
+  nspawnArgs = [ ]; # systemd-nspawn args
   sysctl = ''
     net.ipv4.ip_forward=1
   '';
@@ -348,5 +348,22 @@ caps_allow = [ "CAP_NET_BIND_SERVICE" ];
 ```
 
 > Strict policy by default, voluntary opening.
+
+### Trust model
+
+* Members of the `nixunits` group can run `sudo nixunits` without a password
+  (NixOS module). This is **equivalent to root on the host**: `build -n` accepts
+  any Nix configuration, `preCheckNetReadyScript` runs on the host as root, and
+  any unknown action is passed to `machinectl` as root.
+  Only add host administrators to this group.
+* The container itself is not trusted: `container_exec` (start-post: `extra`,
+  resolv.conf) enters the container's user namespace, and bind ownership fixes
+  (start-pre) and the switch refuse symlinks found in the container root.
+* Open point: `unit.conf` is a symlink to a file of the container's store,
+  owned by the container's uid after the switch, and read as root (systemd
+  `EnvironmentFile`, hooks). It is not reachable from inside the container as
+  long as the read-only `/nix/store` overlay stays mounted (`CAP_SYS_ADMIN` is
+  dropped by default); granting `CAP_SYS_ADMIN` through `caps_allow` weakens this.
+* Container ids are limited to `A-Z a-z 0-9 _ . -`, not starting with `.` or `-`.
 
 ---

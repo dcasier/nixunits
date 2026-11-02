@@ -5,9 +5,12 @@ trap 'echo -e "!!!!\n!!!! Error on $LINENO line : $BASH_COMMAND\n!!!!" >&2' ERR
 # shellcheck disable=SC1091
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
+# --all (user namespace included) and the shell of the system closure:
+# entering the container's mount namespace without its user namespace would
+# run the container's /bin/sh (writable by its root) as the host's root.
 container_exec() {
   log_msg "[ Container ($NS_PID) ] exec $1"
-  nsenter --target "$NS_PID" --mount --uts --ipc --net --pid -- /bin/sh -c "$1"
+  nsenter --target "$NS_PID" --all -- "$SYSTEM_PATH/sw/bin/sh" -c "$1"
 }
 
 container_host_exec() {

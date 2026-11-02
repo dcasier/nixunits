@@ -270,7 +270,7 @@ in {
     '';  
     inherit ip4route ip6route;
   };
-  nspawnArgs = ""; # Args systemd-nspawn 
+  nspawnArgs = [ ]; # Args systemd-nspawn
   sysctl = ''
     net.ipv4.ip_forward=1
   '';
@@ -348,6 +348,26 @@ caps_allow = [ "CAP_NET_BIND_SERVICE" ];
 ```
 
 > Politique stricte par défaut, ouverture volontaire.
+
+### Modèle de confiance
+
+* Les membres du groupe `nixunits` peuvent lancer `sudo nixunits` sans mot de
+  passe (module NixOS). C'est **équivalent à root sur l'hôte** : `build -n`
+  accepte n'importe quelle configuration Nix, `preCheckNetReadyScript` s'exécute
+  sur l'hôte en root, et toute action inconnue est transmise à `machinectl` en root.
+  N'ajouter à ce groupe que des administrateurs de l'hôte.
+* Le conteneur lui-même n'est pas de confiance : `container_exec` (start-post :
+  `extra`, resolv.conf) entre dans le user namespace du conteneur, et la
+  correction des propriétaires des binds (start-pre) ainsi que le switch refusent
+  les liens symboliques trouvés dans la racine du conteneur.
+* Point ouvert : `unit.conf` est un lien vers un fichier du store du conteneur,
+  qui appartient à l'uid du conteneur après le switch, et qui est lu en root
+  (`EnvironmentFile` systemd, hooks). Il n'est pas atteignable depuis le
+  conteneur tant que l'overlay `/nix/store` en lecture seule reste monté
+  (`CAP_SYS_ADMIN` retiré par défaut) ; accorder `CAP_SYS_ADMIN` via `caps_allow`
+  affaiblit cette protection.
+* Les identifiants de conteneur sont limités à `A-Z a-z 0-9 _ . -`, sans `.` ni `-`
+  en premier caractère.
 
 ---
 

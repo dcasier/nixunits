@@ -19,6 +19,7 @@ usage() {
 test $# -eq 0 && usage 1
 id=$1
 shift
+id_check "$id"
 
 FORCE=false
 RECURSIVE=false
@@ -28,8 +29,8 @@ cleanup() {
 }
 
 uid_del() {
-  if grep -q "^$id " "$UID_INV"; then
-    sed -i "s/^$id /__FREE__ /" "$UID_INV"
+  if grep -q "^${id//./\\.} " "$UID_INV"; then
+    sed -i "s/^${id//./\\.} /__FREE__ /" "$UID_INV"
   fi
 }
 
@@ -38,7 +39,7 @@ while getopts "fhr" opt; do
     f)
       FORCE=true;;
     r)
-      RECURSIVE=$OPTARG;;
+      RECURSIVE=true;;
     h)
       usage;;
     \?)

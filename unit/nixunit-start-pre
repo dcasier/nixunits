@@ -7,6 +7,7 @@ ID=$1
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
 export PATH=$PATH:_OPENVSWITCH_PATH_SED_/bin
+id_check "$ID"
 UNIT_DIR=$(unit_dir "$ID")
 UID_ROOT=$(uid_root "$ID")
 MAX_UID=$(( UID_ROOT + 65535 ))
@@ -50,6 +51,12 @@ owner_fix() {
         local target="$UNIT_DIR/root$current"
         if [[ $i -eq $((${#parts[@]} - 1)) ]]; then
           target="$src"
+        elif [ -L "$target" ]; then
+          # Paths under the container root are controlled by the container:
+          # following a symlink here (e.g. /var/x -> /etc) would chown a
+          # host directory to the container's uid.
+          log_msg "ERROR: bind destination traverses a symlink: $target"
+          exit 1
         fi
         uid=$(stat -c '%u' "$target" 2>/dev/null || echo -1)
         if (( uid < UID_ROOT || uid > MAX_UID )); then
@@ -80,6 +87,7 @@ for arg_ in $NSPAWN_ARGS; do
             if [[ "$val" == *:* ]]; then
                 src="${val%%:*}"
                 dst="${val#*:}"
+                dst="${dst%%:*}" # strip options (SRC:DST:ro)
             else
                 src="$val"
                 dst="$val"
