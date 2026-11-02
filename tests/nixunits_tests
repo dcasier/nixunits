@@ -1,148 +1,136 @@
 #!/bin/bash
-set -e -o pipefail
-shopt -s expand_aliases
+# Integration tests for the nixunits CLI.
+#
+# Run as root on a systemd host with nixunits installed (NixOS or portable).
+# Usage: nixunits_tests [-d] [-s <first step>]
+set -euo pipefail
 
-. _NIXUNITS_PATH_SED_/tests/json_status
+ID="nixunits-test"
+PRIVATE_HOST_IP4="10.0.1.1/31"
+PRIVATE_IP4="10.0.1.0/31"
+PRIVATE_HOST_IP6="fc00::d:e:f:1/127"
+PRIVATE_IP6="fc00::d:e:f:0/127"
 
-ID="8643a4f5-c137-44ef-953e-e8b4aca9f924"
-NETNS="8643a4f5"
-PRIVATE_HOST_IP4="10.0.1.1"
-PRIVATE_IP4="10.0.2.2"
-PRIVATE_HOST_IP6="fc00::d:e:f:1"
-PRIVATE_IP6="fc00::a:b:c:2"
-
-# TODO : sandbox (Hydra ? )
-
-DEBUG=0
-WITH_OVS=false
 STEP=0
-
-while getopts "dos:" opt; do
+while getopts "ds:" opt; do
   case $opt in
-    d)
-      DEBUG=1;;
-    o)
-      WITH_OVS=true;;
-    s)
-      STEP=$OPTARG;;
-    *)
-      echo "Invalid option"
-      exit 1;;
+    d) set -x;;
+    s) STEP=$OPTARG;;
+    *) echo "Usage: $0 [-d] [-s step]" >&2; exit 1;;
   esac
 done
 
-test $DEBUG == 1 && set -ex
+NIXUNITS=_NIXUNITS_PATH_SED_/bin/nixunits
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT
 
-_err_msg=" ! ! ! ERROR - Invalid result ! ! !"
+_fail() { echo " ! ! ! ERROR - $* ! ! !" >&2; exit 1; }
 
-_assert_equal() {
-  if [ "$1" != "$2" ]; then
-    echo "$_err_msg"
-    diff -u <(echo "$1") <(echo "$2")
-    exit 1
-  fi
+_field() { "$NIXUNITS" status "$ID" "${@:2}" | jq -r ".$1"; }
+
+_assert_field() {
+  local field="$1" expected="$2" got
+  shift 2
+  got=$(_field "$field" "$@")
+  [ "$got" = "$expected" ] || _fail "status.$field: expected '$expected', got '$got'"
 }
 
-alias _nixunits=_NIXUNITS_PATH_SED_/bin/nixunits
-_json() { _nixunits status $ID -d -o json; }
-_jq() { _json | jq -r ".$1"; }
-_json_without_addr() { _json | jq 'del(.addresses)'; }
-
 _ping() {
-  attempt=0
-  while [ $attempt -lt 5 ]; do
-    ping -c 1 -w 5 $1 && return
-    attempt=$((attempt + 1))
+  local opt=() n
+  [[ "$1" == *:* ]] && opt=(-6)
+  for n in 1 2 3 4 5; do
+    ping "${opt[@]}" -c 1 -w 5 "$1" >/dev/null && return 0
+    sleep "$n"
   done
-  >&2 echo "FAILED ping $1"
-  exit 1
+  _fail "ping $1"
 }
 
 _step() {
-  if [ "$STEP" -le "$1" ]
-  then
+  if [ "$STEP" -le "$1" ]; then
     echo " = = = Step $1 : $2 = = ="
-    true
   else
-    false
+    return 1
   fi
 }
 
-httpd_def="{ services.httpd.enable = true; }"
-
-test "$(_jq declared_in_nixos)" == true && echo "Declared in NixOS" && exit 1
-
-# _nixunits delete $ID -frg > /dev/null
-_nixunits delete $ID -fr > /dev/null
-_assert_equal "$(_json)" "$STATUS_1_INITIAL"
-
-if _step 1 "initial build"; then
-  nixunits build $ID -cc -  >/dev/null <<EOF
-{
-  services.httpd.enable = true;
+cat > "$WORK/config.nix" <<'EOF'
+{ lib, properties, ... }: let
+  get = path: default: lib.attrByPath path default properties;
+in {
+  caps_allow = [ "CAP_NET_BIND_SERVICE" ];
+  network.interfaces.veth = {
+    ip4 = get [ "ip4" ] "";
+    hostIp4 = get [ "hostIp4" ] "";
+    ip6 = get [ "ip6" ] "";
+    hostIp6 = get [ "hostIp6" ] "";
+  };
+  config = {
+    services.httpd.enable = true;
+    system.stateVersion = "25.11";
+  };
 }
 EOF
-  _assert_equal "$(_json)" "$STATUS_1_CREATED"
+sed 's/httpd.enable = true/httpd.enable = false/' "$WORK/config.nix" > "$WORK/config2.nix"
 
-  nixunits delete $ID -f
-  _assert_equal "$(_json)" "$STATUS_1_INITIAL"
+jq -n --arg id "$ID" --arg ip4 "$PRIVATE_IP4" --arg h4 "$PRIVATE_HOST_IP4" \
+  '{id: $id, ip4: $ip4, hostIp4: $h4}' > "$WORK/params4.json"
+jq -n --arg id "$ID" --arg ip4 "$PRIVATE_IP4" --arg h4 "$PRIVATE_HOST_IP4" \
+  --arg ip6 "$PRIVATE_IP6" --arg h6 "$PRIVATE_HOST_IP6" \
+  '{id: $id, ip4: $ip4, hostIp4: $h4, ip6: $ip6, hostIp6: $h6}' > "$WORK/params46.json"
+
+[ "$(_field in_nixos)" = true ] && _fail "$ID is declared in NixOS"
+
+"$NIXUNITS" delete "$ID" -f -r >/dev/null 2>&1 || true
+_assert_field status initial
+
+if _step 0 "invalid ids are rejected"; then
+  for bad in "../x" "a/b" "-x" 'a$(id)' ""; do
+    if "$NIXUNITS" status "$bad" >/dev/null 2>&1; then
+      _fail "id '$bad' accepted"
+    fi
+  done
 fi
 
-if _step 2 "initial build -6"; then
-  nixunits build $ID -cc "$httpd_def" -6 >/dev/null
-  _assert_equal "$(_json)" "$STATUS_1_CREATED"
-  _assert_equal "$(_nixunits status $ID -cc "{ services.httpd.enable = false; }" -o json)" "$STATUS_1_CREATED"
-  _assert_equal "$(_nixunits status $ID -cc "$httpd_def" -o json)" "$STATUS_1_CREATED_NIX_SAME"
+if _step 1 "build"; then
+  "$NIXUNITS" build -n "$WORK/config.nix" -j "$WORK/params4.json" >/dev/null
+  _assert_field status created
+  _assert_field need_switch true
+  _assert_field started false
 fi
 
-if _step 3 "IPv6 auto-generated"; then
-  nixunits build $ID -cc "$httpd_def" -6 -s >/dev/null
-  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED_DETAILS"
-  _ping "$(nixunits ip6_get "$ID")" | grep -A 1 statistiques
+if _step 2 "start (switch)"; then
+  "$NIXUNITS" start "$ID" -s >/dev/null
+  _assert_field status started
+  _assert_field started true
+  _assert_field need_switch false
+  _assert_field os nixos
+  _ping "${PRIVATE_IP4%/*}"
 fi
 
-if _step 4 "Restart"; then
-  nixunits build $ID -cc "$httpd_def" -6 -r >/dev/null
-  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED_DETAILS"
-  _ping "$(nixunits ip6_get "$ID")" | grep -A 1 statistiques
-  nixunits delete $ID -f
-  _assert_equal "$(_json)" "$STATUS_1_INITIAL_WITH_DATA"
+if _step 3 "change detection"; then
+  _assert_field need_store_build false -n "$WORK/config.nix" -j "$WORK/params4.json"
+  _assert_field need_container_build false -n "$WORK/config.nix" -j "$WORK/params4.json"
+  _assert_field need_container_build true -n "$WORK/config.nix" -j "$WORK/params46.json"
+  _assert_field need_store_build true -n "$WORK/config2.nix"
 fi
 
-if _step 5 "IPv4 restart"; then
-  nixunits build $ID -cc "$httpd_def" \
-    -4 "$PRIVATE_IP4" -H4 "$PRIVATE_HOST_IP4" -r >/dev/null
-  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED_DETAILS"
-  _ping "$PRIVATE_IP4" | grep -A 1 statistiques
-  nixunits delete $ID -fr
-  _assert_equal "$(_json)" "$STATUS_1_INITIAL"
+if _step 4 "rebuild without -n (reuse config) + restart with IPv4/IPv6"; then
+  "$NIXUNITS" build -j "$WORK/params46.json" -r >/dev/null
+  _assert_field status started
+  _ping "${PRIVATE_IP4%/*}"
+  _ping "${PRIVATE_IP6%/*}"
 fi
 
-if _step 6 "IPv4 and IPv6 restart"; then
-  nixunits build $ID -cc "$httpd_def" \
-    -4 "$PRIVATE_IP4" -H4 "$PRIVATE_HOST_IP4" \
-    -6 "$PRIVATE_IP6" -H6 "$PRIVATE_HOST_IP6" -r >/dev/null
-  _assert_equal "$(_json_without_addr)" "$STATUS_1_STARTED_DETAILS"
-  _ping "$PRIVATE_IP4" | grep -A 1 statistiques
-  _ping "$PRIVATE_IP6" | grep -A 1 statistiques
-  nixunits delete $ID -fr
-  _assert_equal "$(_json)" "$STATUS_1_INITIAL"
+if _step 5 "restart"; then
+  "$NIXUNITS" restart "$ID" >/dev/null
+  _assert_field status started
+  _ping "${PRIVATE_IP4%/*}"
 fi
 
-# Broken
-#if _step 7 "NetNS"; then
-#  ip link | grep "ve_A_$NETNS" >/dev/null && ip link del "ve_A_$NETNS"
-#  ip netns |grep "$NETNS" >/dev/null && ip netns del "$NETNS"
-#  ip netns add "$NETNS"
-#  ip link add "ve_A_$NETNS" type veth peer name "ve_B_$NETNS"
-#  nixunits build $ID -cc "$httpd_def" -n "/var/aevoo/aevoo/dev/os/nixunits/$ID/$NETNS" -r >/dev/null
-#  ip a add $PRIVATE_HOST_IP4 dev "ve_A_$NETNS"
-#  ip link set dev "ve_B_$NETNS" netns "$NETNS"
-#  ip netns exec $NETNS ip a add $PRIVATE_IP4 dev "ve_B_$NETNS"
-#  _ping "$PRIVATE_IP4" | grep -A 1 statistiques
-#fi
-
-# nixunits delete $ID -f
-# test "$(_json)" != "$STATUS_1_INITIAL" && _err "Invalid initial status : $(_json)"
+if _step 6 "delete"; then
+  "$NIXUNITS" delete "$ID" -f -r >/dev/null
+  _assert_field status initial
+  _assert_field started false
+fi
 
 echo " = = = TESTS OK  = = = "
