@@ -20,6 +20,7 @@ test "$id" = "-h" && usage 0
 test "$id" = "help" && usage 0
 test "$id" = "--help" && usage 0
 shift
+id_check "$id"
 
 while getopts "h" opt; do
   case $opt in

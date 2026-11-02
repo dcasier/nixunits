@@ -3,8 +3,21 @@ set -e
 
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
+usage() {
+  echo "Usage : nixunits nsenter|shell <container id> [options] [command...]"
+  echo "Available options:"
+  echo "  -n  enter the network namespace only"
+  echo "  -q  quiet"
+  echo "  -h  help"
+  echo
+
+  test -n "$1" && exit "$1"
+  exit 0
+}
+
 id="$1"
 shift
+id_check "$id"
 
 NET=false
 QUIET=false

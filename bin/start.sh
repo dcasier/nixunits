@@ -19,6 +19,7 @@ usage() {
 test $# -eq 0 && usage 1
 id=$1
 shift
+id_check "$id"
 echo "Start $id"
 
 container_env "$id"

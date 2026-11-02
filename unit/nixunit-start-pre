@@ -7,6 +7,7 @@ ID=$1
 . _NIXUNITS_PATH_SED_/bin/common.sh
 
 export PATH=$PATH:_OPENVSWITCH_PATH_SED_/bin
+id_check "$ID"
 UNIT_DIR=$(unit_dir "$ID")
 UID_ROOT=$(uid_root "$ID")
 MAX_UID=$(( UID_ROOT + 65535 ))
