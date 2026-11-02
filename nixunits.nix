@@ -18,7 +18,11 @@ stdenv.mkDerivation rec {
 
     patchShebangs $out/bin
 
+    nixpkgsRev=$(jq -r '.nodes.nixpkgs.locked.rev' $src/flake.lock)
+
     sed -i "
+      s|_SYSTEM_SED_|${pkgs.stdenv.hostPlatform.system}|
+      s|_NIXPKGS_REV_SED_|$nixpkgsRev|
       s|evalConfig=.*|evalConfig=$share/eval-config.nix|
       s|_NIXUNITS_PATH_SED_|$out|
       s|__AWK_BIN_SED__|${pkgs.gawk}/bin|

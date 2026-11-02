@@ -8,10 +8,21 @@ GCROOTS_CONTAINERS="$PATH_NIXUNITS/gcroots"
 LOCKFILE="${PATH_NIXUNITS}/.lock"
 PATH_CONTAINERS="$PATH_NIXUNITS/containers"
 STORE_CONTAINERS="$PATH_NIXUNITS/store/default/root"
-SYSTEM=$(nix eval --impure --expr 'builtins.currentSystem' --raw)
+# Known when the package is built (see nixunits.nix): no `nix eval` /
+# `nix flake metadata` on every invocation of every script
+SYSTEM="_SYSTEM_SED_"
 UID_INV="$PATH_NIXUNITS/uidmap"
-NIXPKGS_REV="$(nix flake metadata "_NIXUNITS_PATH_SED_" --json |jq -r '.locks.nodes.nixpkgs.locked.rev')"
-ENV_HASH="${SYSTEM}-${NIXPKGS_REV}"
+NIXPKGS_REV="_NIXPKGS_REV_SED_"
+
+# Global modules (/var/lib/nixunits/modules/*.nix) are imported by every
+# container: they must invalidate the build like the config file does
+modules_hash() {
+  local dir="$PATH_NIXUNITS/modules"
+  [ -d "$dir" ] || { echo "none"; return 0; }
+  find "$dir" -maxdepth 1 -type f -name '*.nix' -print0 \
+    | sort -z | xargs -0 -r sha1sum | sha1sum | cut -d' ' -f1
+}
+ENV_HASH="${SYSTEM}-${NIXPKGS_REV}-$(modules_hash)"
 export ENV_HASH GCROOTS_CONTAINERS LOCKFILE PATH_NIXUNITS STORE_CONTAINERS SYSTEM UID_INV
 
 # Container IDs end up in filesystem paths, Nix expressions and unit names:
