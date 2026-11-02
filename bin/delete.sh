@@ -39,7 +39,7 @@ while getopts "fhr" opt; do
     f)
       FORCE=true;;
     r)
-      RECURSIVE=$OPTARG;;
+      RECURSIVE=true;;
     h)
       usage;;
     \?)

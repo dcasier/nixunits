@@ -64,8 +64,6 @@ let
   };
   properties = builtins.fromJSON(propertiesJSON);
 
-  utils = import ./utils.nix;
-
   system = (
     lib.evalModules({
       inherit modules;

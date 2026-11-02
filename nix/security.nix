@@ -63,7 +63,6 @@ in {
       "CAP_SYS_RAWIO"
       "CAP_SYS_PTRACE"
       "CAP_SYS_PACCT"
-      "CAP_SYS_NICE"
       "CAP_SYS_RESOURCE"
       "CAP_SYS_TIME"
       "CAP_SYS_TTY_CONFIG"
