@@ -1,6 +1,18 @@
 {lib, pkgs, ...}: with lib;
 let
   moduleName = "nixunits";
+
+  # SRC[:DST[:OPTS]] -> --bind[-ro]=SRC:DST[:OPTS]
+  # (nspawn has no "ro" bind option: read-only needs --bind-ro=)
+  bindArg = b: let
+    parts = splitString ":" b;
+    src = elemAt parts 0;
+    dst = if length parts > 1 then elemAt parts 1 else src;
+    opts = if length parts > 2 then splitString "," (elemAt parts 2) else [];
+    ro = elem "ro" opts;
+    rest = filter (o: o != "ro") opts;
+  in "--bind${optionalString ro "-ro"}=${src}:${dst}"
+     + optionalString (rest != []) ":${concatStringsSep "," rest}";
   unitConf = name: "${pathContainers}/${name}/unit.conf";
   pathRoot = name: "${pathContainers}/${name}/root";
   pathContainers = "${pathVar}/containers";
@@ -212,7 +224,7 @@ in with lib; {
           config = {
             nspawnArgs = (security.flags config.caps_allow) ++ [
               "--link-journal=host"
-            ] ++ (map (_bind: "--bind=${_bind}") config.bind);
+            ] ++ (map bindArg config.bind);
             # path = config.config.system.build.toplevel;
           };
           options = {

@@ -89,8 +89,8 @@ done
 
 for arg_ in $NSPAWN_ARGS; do
     case "$arg_" in
-        --bind=*)
-            val="${arg_#--bind=}"
+        --bind=*|--bind-ro=*)
+            val="${arg_#--bind*=}"
 
             if [[ "$val" == *:* ]]; then
                 src="${val%%:*}"
