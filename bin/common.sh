@@ -8,8 +8,7 @@ GCROOTS_CONTAINERS="$PATH_NIXUNITS/gcroots"
 LOCKFILE="${PATH_NIXUNITS}/.lock"
 PATH_CONTAINERS="$PATH_NIXUNITS/containers"
 STORE_CONTAINERS="$PATH_NIXUNITS/store/default/root"
-# Known when the package is built (see nixunits.nix): no `nix eval` /
-# `nix flake metadata` on every invocation of every script
+# Substituted when the package is built (see nixunits.nix)
 SYSTEM="_SYSTEM_SED_"
 UID_INV="$PATH_NIXUNITS/uidmap"
 NIXPKGS_REV="_NIXPKGS_REV_SED_"
@@ -196,16 +195,23 @@ ovs_port_add() {
   fi
 }
 
+pid_tree() {  # $1 and all its descendants
+  local p
+  echo "$1"
+  for p in $(ps --ppid "$1" -o pid=); do
+    pid_tree "$p"
+  done
+}
+
 pid_in_ns_not_in_container() {
   PID_SYSTEMD=$1
   ALL=$(pid_with_same_ns_find "$PID_SYSTEMD" pid)
-  # TREE=$(pstree -Tp "$PID_SYSTEMD" | grep -o '([0-9]\+)' | tr -d '()')
-  TREE=$(pstree "$PID_SYSTEMD" | grep -o ' [0-9]\+ ' )
+  TREE=$(pid_tree "$PID_SYSTEMD")
 
   # shellcheck disable=SC2086
   comm -13 \
-    <(printf "%s\n" $TREE | sort -n) \
-    <(printf "%s\n" $ALL | sort -n)
+    <(printf "%s\n" $TREE | sort) \
+    <(printf "%s\n" $ALL | sort)
 }
 
 pid_with_same_ns_find() {

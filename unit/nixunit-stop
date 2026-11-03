@@ -4,16 +4,6 @@ set -eo pipefail
 . _NIXUNITS_PATH_SED_/bin/common.sh
 export PATH=$PATH:_OPENVSWITCH_PATH_SED_/bin
 
-interface_clean() {
-  interface_env "$1"
-  if [ -n "$OVS_BRIDGE" ]; then
-    log_msg "Delete OVS interface - $INTERFACE - "
-    if ovs_port_exists "$INTERFACE"; then
-      ovs_port_del "$INTERFACE"
-    fi
-  fi
-}
-
 log_block_msg "### nixunits STOP"
 
 NS_PID=$(host_exec "ps --ppid $MAINPID -o pid h")
@@ -56,10 +46,5 @@ if machinectl status "$NAME" >/dev/null 2>&1; then
   machinectl kill "$NAME" --signal=SIGKILL 2>/dev/null || true
 fi
 
-systemctl reset-failed "nixunits-network@${NAME}.service" "machine-${NAME}.scope" 2>/dev/null || true
-
-for iface in $(interfaces_list); do
-  interface_clean "$iface"
-done
-
+# Cleanup (reset-failed, OVS ports): nixunit-stop-post (ExecStopPost)
 log_block_msg "### nixunits STOP END"

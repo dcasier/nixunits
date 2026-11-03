@@ -56,7 +56,7 @@ let
           if type == "regular" && lib.hasSuffix ".nix" name
           then modules_dir + "/${name}"
           else null)
-        (builtins.readDir modules_dir));
+        (if builtins.pathExists modules_dir then builtins.readDir modules_dir else {}));
 
   nixunits = pkgs.callPackage ../nixunits.nix {
     inherit (pkgs) lib stdenv;

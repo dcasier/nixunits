@@ -160,8 +160,7 @@ build_container() {
   mount -t tmpfs tmpfs "$C_TMP/merged/nix/var/nix"
   rsync -a --exclude=temproots "$STORE_CONTAINERS/nix/var/nix/" "$C_TMP/merged/nix/var/nix/"
 
-  # Always the staged copy: PARAMS_FILE may be empty (reuse of the previous
-  # parameters) or a URL (already downloaded to C_FUTUR_ARGS)
+  # staged copy (PARAMS_FILE may be empty or a URL)
   local props="builtins.readFile $C_FUTUR_ARGS"
   local cmd=(nix build --no-link --print-out-paths "${ARGS[@]}" --store "$C_TMP/merged" \
                --expr  "($MK_CONTAINER {configFile = $C_FUTUR_NIX; id = \"$id\"; propertiesJSON = $props;})")
@@ -193,6 +192,11 @@ if [ "$FORCE" = true ] || [ ! -L "$GCROOT_PATH" ];then
   lock_release
 else
   echo "Store unchanged"
+  # the root may come from another container: point ours to it (nixunits gc)
+  lock_acquire
+  trap lock_release EXIT
+  ln -Tfs "$GCROOT_PATH" "$CONTAINER_DIR/store"
+  lock_release
 fi
 if [ "$FORCE" = true ] || [ ! -f "$CONTAINER_META" ] || [ ! "$(cat "$CONTAINER_META")" = "$UNIT_HASH" ];then
   lock_acquire "$CONTAINER_LOCK"

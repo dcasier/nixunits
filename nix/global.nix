@@ -1,6 +1,22 @@
 {lib, pkgs, ...}: with lib;
 let
   moduleName = "nixunits";
+
+  # SRC[:DST[:OPTS]] -> --bind[-ro]=SRC:DST:OPTS
+  # (nspawn has no "ro" bind option: read-only needs --bind-ro=)
+  # "rootidmap" by default: the container's root maps to the owner of SRC,
+  # nothing is chowned on the host.
+  bindArg = b: let
+    parts = splitString ":" b;
+    src = elemAt parts 0;
+    dst = if length parts > 1 then elemAt parts 1 else src;
+    opts = if length parts > 2 then splitString "," (elemAt parts 2) else [];
+    ro = elem "ro" opts;
+    idmapOpts = [ "idmap" "noidmap" "rootidmap" "owneridmap" ];
+    rest = filter (o: o != "ro") opts
+      ++ optional (!any (o: elem o idmapOpts) opts) "rootidmap";
+  in "--bind${optionalString ro "-ro"}=${src}:${dst}"
+     + optionalString (rest != []) ":${concatStringsSep "," rest}";
   unitConf = name: "${pathContainers}/${name}/unit.conf";
   pathRoot = name: "${pathContainers}/${name}/root";
   pathContainers = "${pathVar}/containers";
@@ -64,7 +80,7 @@ let
                   .[]
                   | select(
                       (.proto_down | not)
-                      and any(.addr_info[]?; .tentative==true)
+                      and any(.addr_info[]?; .tentative==true and (.dadfailed | not))
                     )
                   | .ifname
                 ')
@@ -72,6 +88,11 @@ let
                 [ -z "$res" ] && break
                 sleep 1
             done
+            # A duplicate address stays "tentative" forever: report it, don't wait
+            ${pkgs.iproute2}/bin/ip -6 -j addr | ${pkgs.jq}/bin/jq -r '
+              .[] | .ifname as $i | .addr_info[]? | select(.dadfailed == true)
+              | "WARNING: duplicate IPv6 address (DAD failed): \(.local)/\(.prefixlen) on \($i)"
+            '
             sleep 2
 
             ${pkgs.iproute2}/bin/ip a
@@ -103,10 +124,6 @@ let
       in {
         network-pre = wrr;
         network-online = wrr;
-        sysinit = {
-          after = [ "network-online.target" ];
-          wants = [ "network-online.target" ];
-        };
       };
     };
   };
@@ -216,7 +233,7 @@ in with lib; {
           config = {
             nspawnArgs = (security.flags config.caps_allow) ++ [
               "--link-journal=host"
-            ] ++ (map (_bind: "--bind=${_bind}") config.bind);
+            ] ++ (map bindArg config.bind);
             # path = config.config.system.build.toplevel;
           };
           options = {

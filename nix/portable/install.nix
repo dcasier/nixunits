@@ -16,9 +16,11 @@ pkgs.writeShellApplication {
     ln -sfn "${nixunits}/bin/nixunits" /usr/local/bin/nixunits
     ln -sfn "${networkUnit}/nixunits-network@.service" /etc/systemd/system/nixunits-network@.service
     ln -sfn "${serviceUnit}/nixunits@.service" /etc/systemd/system/nixunits@.service
+    # keep the installed version from Nix GC (closure: package + both units)
+    ln -sfn "$(dirname "$(dirname "$(readlink -f "$0")")")" /nix/var/nix/gcroots/nixunits
 
     systemctl daemon-reload
-    systemctl reset-failed
+    systemctl reset-failed 'nixunits@*' 'nixunits-network@*'
 
     echo "[nixunits] Done"
   '';

@@ -327,6 +327,7 @@ nixunits <action> [options]
 | shell / nsenter | enter the container |
 | list | declared and active containers |
 | delete <id> | remove the container |
+| gc [-n] | remove unused store roots, then GC the containers store (-n: dry run) |
 | * | wrapper around machinectl $@ |
 
 ---
@@ -357,8 +358,9 @@ caps_allow = [ "CAP_NET_BIND_SERVICE" ];
   any unknown action is passed to `machinectl` as root.
   Only add host administrators to this group.
 * The container itself is not trusted: `container_exec` (start-post: `extra`,
-  resolv.conf) enters the container's user namespace, and bind ownership fixes
-  (start-pre) and the switch refuse symlinks found in the container root.
+  resolv.conf) enters the container's user namespace; bind ownership fixes
+  (start-pre) resolve symlinks inside the container root, never on the host;
+  the switch refuses a symlinked `root/` or `root/usr`.
 * Open point: `unit.conf` is a symlink to a file of the container's store,
   owned by the container's uid after the switch, and read as root (systemd
   `EnvironmentFile`, hooks). It is not reachable from inside the container as

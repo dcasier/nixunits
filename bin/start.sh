@@ -78,10 +78,13 @@ switch() {
   mv -f "$C_FUTUR/unit.conf" "$CONTAINER_DIR/unit.conf"
   mv "$C_FUTUR_ARGS" "$CONTAINER_ARGS"
   rm -f "$C_FUTUR_OK"
-  # configuration.nix is what build/status compare against (it was never
-  # written before, so change detection and `build` without -n never worked)
+  # configuration.nix is what build/status compare against
   mv "$C_FUTUR_NIX" "$CONTAINER_NIX"
   cp "$CONTAINER_NIX" "$CONTAINER_OK"
+  # store root of the root now in use, kept by `nixunits gc`
+  if [ -L "$CONTAINER_DIR/store" ]; then
+    ln -Tfs "$(readlink "$CONTAINER_DIR/store")" "$CONTAINER_DIR/store.current"
+  fi
 }
 
 S=$(_NIXUNITS_PATH_SED_/bin/status.sh "$id")
