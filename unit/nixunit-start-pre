@@ -36,8 +36,11 @@ interface_check() {
   fi
 }
 
+# Make the bind destination's parent directories (inside the container root)
+# owned by the container's root. The bind source on the host is not touched:
+# binds use the "rootidmap" option (see bindArg in nix/global.nix).
 owner_fix() {
-    local dst="$1" src="$2"
+    local dst="$1"
     local root="$UNIT_DIR/root"
     local rest="${dst#/}" cur="" comp link uid target hops=0
 
@@ -51,23 +54,20 @@ owner_fix() {
             ..) cur="${cur%/*}"; continue;;   # can't climb above the root
         esac
 
-        if [ -z "$rest" ]; then
-          target="$src"
-        else
-          if [ -L "$root$cur/$comp" ]; then
-            hops=$((hops + 1))
-            if [ "$hops" -gt 40 ]; then
-              log_msg "ERROR: too many symlinks in bind destination $dst"
-              exit 1
-            fi
-            link=$(readlink "$root$cur/$comp")
-            case "$link" in /*) cur="";; esac
-            rest="${link#/}/$rest"
-            continue
+        [ -z "$rest" ] && break   # the mount point itself is created by nspawn
+        if [ -L "$root$cur/$comp" ]; then
+          hops=$((hops + 1))
+          if [ "$hops" -gt 40 ]; then
+            log_msg "ERROR: too many symlinks in bind destination $dst"
+            exit 1
           fi
-          cur="$cur/$comp"
-          target="$root$cur"
+          link=$(readlink "$root$cur/$comp")
+          case "$link" in /*) cur="";; esac
+          rest="${link#/}/$rest"
+          continue
         fi
+        cur="$cur/$comp"
+        target="$root$cur"
         uid=$(stat -c '%u' "$target" 2>/dev/null || echo -1)
         if (( uid < UID_ROOT || uid > MAX_UID )); then
             log_msg "chown $UID_ROOT:$UID_ROOT $target"
@@ -91,17 +91,10 @@ for arg_ in $NSPAWN_ARGS; do
     case "$arg_" in
         --bind=*|--bind-ro=*)
             val="${arg_#--bind*=}"
+            dst="${val#*:}"      # SRC:DST[:OPTS], DST always generated
+            dst="${dst%%:*}"
 
-            if [[ "$val" == *:* ]]; then
-                src="${val%%:*}"
-                dst="${val#*:}"
-                dst="${dst%%:*}" # strip options (SRC:DST:ro)
-            else
-                src="$val"
-                dst="$val"
-            fi
-
-            owner_fix "$dst" "$src"
+            owner_fix "$dst"
             ;;
     esac
 done

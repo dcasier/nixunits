@@ -2,15 +2,19 @@
 let
   moduleName = "nixunits";
 
-  # SRC[:DST[:OPTS]] -> --bind[-ro]=SRC:DST[:OPTS]
+  # SRC[:DST[:OPTS]] -> --bind[-ro]=SRC:DST:OPTS
   # (nspawn has no "ro" bind option: read-only needs --bind-ro=)
+  # "rootidmap" by default: the container's root maps to the owner of SRC,
+  # nothing is chowned on the host.
   bindArg = b: let
     parts = splitString ":" b;
     src = elemAt parts 0;
     dst = if length parts > 1 then elemAt parts 1 else src;
     opts = if length parts > 2 then splitString "," (elemAt parts 2) else [];
     ro = elem "ro" opts;
-    rest = filter (o: o != "ro") opts;
+    idmapOpts = [ "idmap" "noidmap" "rootidmap" "owneridmap" ];
+    rest = filter (o: o != "ro") opts
+      ++ optional (!any (o: elem o idmapOpts) opts) "rootidmap";
   in "--bind${optionalString ro "-ro"}=${src}:${dst}"
      + optionalString (rest != []) ":${concatStringsSep "," rest}";
   unitConf = name: "${pathContainers}/${name}/unit.conf";
