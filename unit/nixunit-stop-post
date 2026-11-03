@@ -1,0 +1,29 @@
+#!/bin/bash
+set -eo pipefail
+
+. _NIXUNITS_PATH_SED_/bin/common.sh
+export PATH=$PATH:_OPENVSWITCH_PATH_SED_/bin
+
+# Run by systemd (ExecStopPost) every time the unit stops, including a slow
+# stop and a failed start (where ExecStop is not run): remove what
+# start-pre created.
+
+interface_clean() {
+  interface_env "$1"
+  if [ -n "$OVS_BRIDGE" ]; then
+    log_msg "Delete OVS interface - $INTERFACE - "
+    if ovs_port_exists "$INTERFACE"; then
+      ovs_port_del "$INTERFACE"
+    fi
+  fi
+}
+
+log_block_msg "### nixunits STOP POST"
+
+systemctl reset-failed "nixunits-network@${NAME}.service" "machine-${NAME}.scope" 2>/dev/null || true
+
+for iface in $(interfaces_list); do
+  interface_clean "$iface"
+done
+
+log_block_msg "### nixunits STOP POST END"
