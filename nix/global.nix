@@ -80,7 +80,7 @@ let
                   .[]
                   | select(
                       (.proto_down | not)
-                      and any(.addr_info[]?; .tentative==true)
+                      and any(.addr_info[]?; .tentative==true and (.dadfailed | not))
                     )
                   | .ifname
                 ')
@@ -88,6 +88,11 @@ let
                 [ -z "$res" ] && break
                 sleep 1
             done
+            # A duplicate address stays "tentative" forever: report it, don't wait
+            ${pkgs.iproute2}/bin/ip -6 -j addr | ${pkgs.jq}/bin/jq -r '
+              .[] | .ifname as $i | .addr_info[]? | select(.dadfailed == true)
+              | "WARNING: duplicate IPv6 address (DAD failed): \(.local)/\(.prefixlen) on \($i)"
+            '
             sleep 2
 
             ${pkgs.iproute2}/bin/ip a
