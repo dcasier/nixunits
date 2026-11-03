@@ -196,16 +196,23 @@ ovs_port_add() {
   fi
 }
 
+pid_tree() {  # $1 and all its descendants
+  local p
+  echo "$1"
+  for p in $(ps --ppid "$1" -o pid=); do
+    pid_tree "$p"
+  done
+}
+
 pid_in_ns_not_in_container() {
   PID_SYSTEMD=$1
   ALL=$(pid_with_same_ns_find "$PID_SYSTEMD" pid)
-  # TREE=$(pstree -Tp "$PID_SYSTEMD" | grep -o '([0-9]\+)' | tr -d '()')
-  TREE=$(pstree "$PID_SYSTEMD" | grep -o ' [0-9]\+ ' )
+  TREE=$(pid_tree "$PID_SYSTEMD")
 
   # shellcheck disable=SC2086
   comm -13 \
-    <(printf "%s\n" $TREE | sort -n) \
-    <(printf "%s\n" $ALL | sort -n)
+    <(printf "%s\n" $TREE | sort) \
+    <(printf "%s\n" $ALL | sort)
 }
 
 pid_with_same_ns_find() {
