@@ -36,7 +36,13 @@ if [ -n "$EXTRA_FILE" ];then
   container_exec "$(cat "${_ROOT_}$EXTRA_FILE")"
 fi
 
-_resolv=$(cat /etc/resolv.conf)
+# With systemd-resolved, /etc/resolv.conf points to its 127.0.0.53 stub,
+# unreachable from the container network: use the uplink servers instead
+_resolv_src=/etc/resolv.conf
+if [ -f /run/systemd/resolve/resolv.conf ]; then
+  _resolv_src=/run/systemd/resolve/resolv.conf
+fi
+_resolv=$(cat "$_resolv_src")
 # rm first: the file may be owned by an uid unmapped in the user namespace
 container_exec "rm -f /etc/resolv.conf; echo \"$_resolv\" > /etc/resolv.conf"
 
