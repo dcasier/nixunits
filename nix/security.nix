@@ -21,10 +21,11 @@
         LockPersonality = mkForce null;
         MemoryDenyWriteExecute = mkForce null;
         ProtectControlGroups = lib.mkForce false;
-        PrivateDevices = mkForce null;
+        # false, not null: null gives an empty value, rejected for these booleans
+        PrivateDevices = mkForce false;
         ProtectHostname = mkForce null;
-        ProtectKernelModules = mkForce null;
-        ProtectKernelTunables = mkForce null;
+        ProtectKernelModules = mkForce false;
+        ProtectKernelTunables = mkForce false;
         PrivateMounts = mkForce null;
         PrivateUsers = lib.mkForce false;
         RestrictAddressFamilies = mkForce null;
