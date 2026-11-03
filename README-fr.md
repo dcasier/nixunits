@@ -357,9 +357,10 @@ caps_allow = [ "CAP_NET_BIND_SERVICE" ];
   sur l'hôte en root, et toute action inconnue est transmise à `machinectl` en root.
   N'ajouter à ce groupe que des administrateurs de l'hôte.
 * Le conteneur lui-même n'est pas de confiance : `container_exec` (start-post :
-  `extra`, resolv.conf) entre dans le user namespace du conteneur, et la
-  correction des propriétaires des binds (start-pre) ainsi que le switch refusent
-  les liens symboliques trouvés dans la racine du conteneur.
+  `extra`, resolv.conf) entre dans le user namespace du conteneur ; la
+  correction des propriétaires des binds (start-pre) résout les liens symboliques
+  dans la racine du conteneur, jamais sur l'hôte ; le switch refuse un `root/` ou
+  un `root/usr` qui serait un lien symbolique.
 * Point ouvert : `unit.conf` est un lien vers un fichier du store du conteneur,
   qui appartient à l'uid du conteneur après le switch, et qui est lu en root
   (`EnvironmentFile` systemd, hooks). Il n'est pas atteignable depuis le
