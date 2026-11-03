@@ -1,6 +1,6 @@
 # inspired by erikarvstedt/extra-container
 
-{ lib, options, ... }:
+{ lib, options, pkgs, ... }:
 
 let
     optionValue = default: lib.mkOption { inherit default; };
@@ -17,6 +17,9 @@ in {
         loader.systemd-boot.bootCounting.enable = False;
       };
       environment.systemPackages = dummy;
+      environment.variables = optionValue {};
+      i18n.imperativeLocale = False;
+      time.timeZone = optionValue null;
       networking = {
         dhcpcd.denyInterfaces = dummy;
         extraHosts = dummy;
@@ -43,6 +46,7 @@ in {
       services = {
         dbus = dummy;
         logrotate = dummy;
+        openssh.enable = False;
         rsyslogd.enable = False;
         syslog-ng.enable = False;
         udev = dummy;
@@ -53,6 +57,7 @@ in {
         nscd = dummy;
         nssDatabases = dummy;
         nssModules = dummy;
+        nixos-init.package = optionValue pkgs.nixos-init;
         path = optionValue "";
         requiredKernelConfig = dummy;
         stateVersion = optionValue "25.11";
