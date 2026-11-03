@@ -103,10 +103,6 @@ let
       in {
         network-pre = wrr;
         network-online = wrr;
-        sysinit = {
-          after = [ "network-online.target" ];
-          wants = [ "network-online.target" ];
-        };
       };
     };
   };
