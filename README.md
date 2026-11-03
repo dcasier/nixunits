@@ -327,6 +327,7 @@ nixunits <action> [options]
 | shell / nsenter | enter the container |
 | list | declared and active containers |
 | delete <id> | remove the container |
+| gc [-n] | remove unused store roots, then GC the containers store (-n: dry run) |
 | * | wrapper around machinectl $@ |
 
 ---

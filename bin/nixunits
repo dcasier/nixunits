@@ -11,6 +11,7 @@ usage() {
   echo "  delete"
   echo "  disable"
   echo "  enable"
+  echo "  gc"
   echo "  ip6_get <container name>"
   echo "  list"
   echo "  nsenter|shell"
@@ -41,6 +42,8 @@ case "$ACTION" in
     _NIXUNITS_PATH_SED_/bin/disable.sh "$@";;
   enable)
     _NIXUNITS_PATH_SED_/bin/enable.sh "$@";;
+  gc)
+    _NIXUNITS_PATH_SED_/bin/gc.sh "$@";;
   ip6_get)
     ip6_crc32 "$1";;
   list)

@@ -327,6 +327,7 @@ nixunits <action> [options]
 | shell / nsenter | entrer dans le conteneur |
 | list | conteneurs déclarés et actifs |
 | delete <id> | supprimer le conteneur |
+| gc [-n] | supprimer les racines inutilisées puis nettoyer le store des conteneurs (-n : simulation) |
 | * | wrapper machinectl $@ |
 
 ---

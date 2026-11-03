@@ -192,6 +192,11 @@ if [ "$FORCE" = true ] || [ ! -L "$GCROOT_PATH" ];then
   lock_release
 else
   echo "Store unchanged"
+  # the root may come from another container: point ours to it (nixunits gc)
+  lock_acquire
+  trap lock_release EXIT
+  ln -Tfs "$GCROOT_PATH" "$CONTAINER_DIR/store"
+  lock_release
 fi
 if [ "$FORCE" = true ] || [ ! -f "$CONTAINER_META" ] || [ ! "$(cat "$CONTAINER_META")" = "$UNIT_HASH" ];then
   lock_acquire "$CONTAINER_LOCK"
