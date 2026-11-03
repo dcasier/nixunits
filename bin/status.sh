@@ -81,8 +81,6 @@ if [ -f "$NIX_FILE" ];then
   fi
 fi
 
-# Built with jq: proper escaping, and real booleans everywhere
-# ("started" and "in_nixos" used to be the strings "true"/"false")
 _JQ_SED_ -n \
   --arg id "$id" \
   --arg status "$STATUS" \

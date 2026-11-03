@@ -41,10 +41,8 @@ owner_fix() {
     local root="$UNIT_DIR/root"
     local rest="${dst#/}" cur="" comp link uid target hops=0
 
-    # Walk the destination component by component. Symlinks found under the
-    # container root are resolved *inside* that root (as nspawn does for the
-    # bind itself), never on the host: e.g. /var/run -> /run must give
-    # root/run, not the host's /run.
+    # Symlinks are resolved inside the container root, never on the host
+    # (e.g. /var/run -> /run must give root/run, not the host's /run)
     while [ -n "$rest" ]; do
         comp="${rest%%/*}"
         if [ "$comp" = "$rest" ]; then rest=""; else rest="${rest#*/}"; fi

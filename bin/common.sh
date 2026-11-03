@@ -8,8 +8,7 @@ GCROOTS_CONTAINERS="$PATH_NIXUNITS/gcroots"
 LOCKFILE="${PATH_NIXUNITS}/.lock"
 PATH_CONTAINERS="$PATH_NIXUNITS/containers"
 STORE_CONTAINERS="$PATH_NIXUNITS/store/default/root"
-# Known when the package is built (see nixunits.nix): no `nix eval` /
-# `nix flake metadata` on every invocation of every script
+# Substituted when the package is built (see nixunits.nix)
 SYSTEM="_SYSTEM_SED_"
 UID_INV="$PATH_NIXUNITS/uidmap"
 NIXPKGS_REV="_NIXPKGS_REV_SED_"

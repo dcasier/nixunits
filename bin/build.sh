@@ -160,8 +160,7 @@ build_container() {
   mount -t tmpfs tmpfs "$C_TMP/merged/nix/var/nix"
   rsync -a --exclude=temproots "$STORE_CONTAINERS/nix/var/nix/" "$C_TMP/merged/nix/var/nix/"
 
-  # Always the staged copy: PARAMS_FILE may be empty (reuse of the previous
-  # parameters) or a URL (already downloaded to C_FUTUR_ARGS)
+  # staged copy (PARAMS_FILE may be empty or a URL)
   local props="builtins.readFile $C_FUTUR_ARGS"
   local cmd=(nix build --no-link --print-out-paths "${ARGS[@]}" --store "$C_TMP/merged" \
                --expr  "($MK_CONTAINER {configFile = $C_FUTUR_NIX; id = \"$id\"; propertiesJSON = $props;})")
