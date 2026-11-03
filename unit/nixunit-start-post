@@ -37,7 +37,9 @@ if [ -n "$EXTRA_FILE" ];then
 fi
 
 _resolv=$(cat /etc/resolv.conf)
-container_exec "echo \"$_resolv\" > /etc/resolv.conf"
+# rm first: a resolv.conf written by a previous version (as host root) is
+# owned by an uid unmapped in the user namespace and can't be overwritten
+container_exec "rm -f /etc/resolv.conf; echo \"$_resolv\" > /etc/resolv.conf"
 
 log_msg "### nixunits END START POST ###"
 
