@@ -16,8 +16,9 @@ usage() {
   echo "  list"
   echo "  nsenter|shell"
   echo "  start"
-  echo "  restart|reboot"
+  echo "  restart|reboot <id> [-f]"
   echo "  status"
+  echo "  stop <id> [-f]"
   echo "  * : wrapper => machinectl \$@"
   echo "  h, help"
   echo "  <action> h, help"
@@ -56,16 +57,13 @@ case "$ACTION" in
   nsenter|shell)
     _NIXUNITS_PATH_SED_/bin/nsenter.sh "$@";;
   restart|reboot)
-    id_check "$1"
-    if shell_exist "$1"; then
-      echo "ERROR: nsenter|shell exist"
-      exit 1
-    fi
     _NIXUNITS_PATH_SED_/bin/start.sh "$@" -r;;
   start)
     _NIXUNITS_PATH_SED_/bin/start.sh "$@";;
   status)
     _NIXUNITS_PATH_SED_/bin/status.sh "$@";;
+  stop)
+    _NIXUNITS_PATH_SED_/bin/stop.sh "$@";;
   h|help)
     usage 0;;
   *)

@@ -214,6 +214,28 @@ pid_in_ns_not_in_container() {
     <(printf "%s\n" $ALL | sort)
 }
 
+# Processes running in the container (PID namespace) without descending from
+# its init: `nixunits shell`, `nixunits nsenter ...` and the like
+external_jobs() {
+  local leader supervisor p
+  leader=$(pid_leader "$1" 2>/dev/null) || return 0
+  [ -n "$leader" ] || return 0
+  supervisor=$(ps -o ppid= -p "$leader" 2>/dev/null | tr -d ' ')   # nspawn
+  {
+    pid_in_ns_not_in_container "$leader"
+    # Entered only the network namespace (nsenter --net): outside the PID
+    # namespace, it survives the container. Skipped when the container
+    # shares the host network namespace (every host process would match).
+    if [ "$(readlink "/proc/$leader/ns/net")" != "$(readlink /proc/$$/ns/net)" ]; then
+      comm -13 <(pid_with_same_ns_find "$leader" pid | sort) \
+               <(pid_with_same_ns_find "$leader" net | sort)
+    fi
+  } 2>/dev/null | sort -u | while read -r p; do
+    [ "$p" = "$supervisor" ] && continue
+    ps -o pid=,args= -p "$p" 2>/dev/null || true
+  done
+}
+
 pid_with_same_ns_find() {
   PID=$1
   TYPE=$2

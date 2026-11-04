@@ -15,7 +15,6 @@ let
     ExecStartPre="${nixunits}/unit/nixunit-start-pre %i";
     ExecStart="systemd-nspawn --machine=%i -D ${global.pathRoot "%i"} --notify-ready=yes --kill-signal=SIGRTMIN+3 $NSPAWN_ARGS \${SYSTEM_PATH}/init";
     ExecStartPost="${nixunits}/unit/nixunit-start-post";
-    ExecStop="${nixunits}/unit/nixunit-stop";
     ExecStopPost="${nixunits}/unit/nixunit-stop-post";
     EnvironmentFile = "${global.unitConf "%i"}";
     KillMode = "mixed";
@@ -29,6 +28,10 @@ let
     SyslogIdentifier = "nixunit %i";
     TasksMax = "16384";
     TimeoutStartSec = "10min";
+    # No ExecStop: on stop, systemd sends SIGTERM to nspawn (KillMode=mixed),
+    # which asks the container for an orderly shutdown (--kill-signal), as in
+    # systemd-nspawn@.service. Remaining processes die with the container init.
+    TimeoutStopSec = "2min";
     Type = "notify";
   };
 

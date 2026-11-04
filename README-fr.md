@@ -323,7 +323,7 @@ nixunits <action> [options]
 | Action | Effet |
 |--------|------|
 | build <id> | créer ou mettre à jour le conteneur |
-| start / restart / status | gestion systemd |
+| start / restart / status / stop | gestion systemd ; restart et stop refusent si des processus tournent dans le conteneur depuis l’extérieur (`nixunits shell`, nsenter), `-f` force |
 | shell / nsenter | entrer dans le conteneur |
 | list | conteneurs déclarés et actifs |
 | delete <id> | supprimer le conteneur |

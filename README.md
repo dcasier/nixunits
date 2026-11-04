@@ -323,7 +323,7 @@ nixunits <action> [options]
 | Action | Effect |
 |--------|--------|
 | build <id> | create or update the container |
-| start / restart / status | systemd service control |
+| start / restart / status / stop | systemd service control; restart and stop refuse while processes run in the container from outside (`nixunits shell`, nsenter), `-f` forces |
 | shell / nsenter | enter the container |
 | list | declared and active containers |
 | delete <id> | remove the container |

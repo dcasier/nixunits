@@ -6,6 +6,8 @@ set -euo pipefail
 usage() {
   echo "Usage : nixunits start <container id> [options]"
   echo "Available options:"
+  echo "  -f  restart even if processes run in the container from outside"
+  echo "      (nixunits shell, nsenter ...)"
   echo "  -r  restart ?"
   echo "  -s  switch ?"
   echo "  -h  help"
@@ -26,12 +28,14 @@ container_env "$id"
 _unit="nixunits@${id}.service"
 # _unit_net="nixunits-network@${id}.service"
 
+FORCE_STOP=false
 RESTART=false
 SWITCH=false
 CONTAINER_RID="$(uid_root "$id")"
 
-while getopts "rsh" opt; do
+while getopts "frsh" opt; do
   case $opt in
+    f) FORCE_STOP=true;;
     r) RESTART=true;;
     s) SWITCH=true;;
     h) usage;;
@@ -94,6 +98,15 @@ if [[ "$started" = true ]] && [ "$RESTART" != true ];then
     SWITCH=false
 elif [ "$(echo "$S" | jq -r .need_switch)" != "true" ]; then
     SWITCH=false
+fi
+
+if [[ "$started" == "true" ]] && [ "$RESTART" = true ] && [ "$FORCE_STOP" != true ]; then
+  jobs=$(external_jobs "$id")
+  if [ -n "$jobs" ]; then
+    echo "ERROR: processes run in $id from outside, not restarting (-f to force):" >&2
+    echo "$jobs" >&2
+    exit 1
+  fi
 fi
 
 if [ ! -f "$CONTAINER_OK" ] && [ "$SWITCH" = false ]; then
