@@ -204,7 +204,7 @@ pid_tree() {  # $1 and all its descendants
 }
 
 pid_in_ns_not_in_container() {
-  PID_SYSTEMD=$1
+  PID_SYSTEMD=${1//[[:space:]]/}   # callers pass `ps -o pid h` output, space-padded
   ALL=$(pid_with_same_ns_find "$PID_SYSTEMD" pid)
   TREE=$(pid_tree "$PID_SYSTEMD")
 
