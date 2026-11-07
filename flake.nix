@@ -6,6 +6,7 @@
   };
 
   outputs = { self, nixpkgs }:  let
+    rev = self.shortRev or self.dirtyShortRev or "unknown";
     systems = [ "x86_64-linux" "aarch64-linux" ];
     forAllSystems = f: nixpkgs.lib.genAttrs systems (system:
       f (import nixpkgs {
@@ -14,7 +15,8 @@
       })
     );
   in {
-    nixosModules.default = import ./module.nix;
+    nixosModules.default = { config, lib, pkgs, ... }@args:
+      import ./module.nix (args // { nixunitsRev = rev; });
 
     lib = forAllSystems (pkgs: {
       mkContainer = { configFile, id ? null, propertiesJSON }:
@@ -24,8 +26,8 @@
     });
 
     packages = forAllSystems (pkgs: {
-      portable = import ./nix/portable { inherit (pkgs) lib pkgs; };
-      nixunits = import ./nixunits.nix { inherit (pkgs) lib stdenv pkgs; };
+      portable = import ./nix/portable { inherit (pkgs) lib pkgs; inherit rev; };
+      nixunits = import ./nixunits.nix { inherit (pkgs) lib stdenv pkgs; inherit rev; };
     });
 
     devShells = forAllSystems (pkgs: {

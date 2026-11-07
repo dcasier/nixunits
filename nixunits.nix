@@ -1,8 +1,8 @@
-{ lib, pkgs, stdenv }: with lib;
+{ lib, pkgs, stdenv, rev ? "unknown" }: with lib;
 
 stdenv.mkDerivation rec {
   pname = "nixunits";
-  version = "0.1";
+  version = "0.2.0";
 
   src = ./.;
 
@@ -19,9 +19,15 @@ stdenv.mkDerivation rec {
     patchShebangs $out/bin
 
     nixpkgsRev=$(jq -r '.nodes.nixpkgs.locked.rev' $src/flake.lock)
+    # Sources that generate the container (nix/*.nix, see mkContainer)
+    genHash=$(cd $src && find nix -maxdepth 1 -type f -name '*.nix' -print0 \
+      | sort -z | xargs -0 sha1sum | sha1sum | cut -d' ' -f1)
 
     sed -i "
       s|_SYSTEM_SED_|${pkgs.stdenv.hostPlatform.system}|
+      s|_NIXUNITS_VERSION_SED_|${version}|
+      s|_NIXUNITS_REV_SED_|${rev}|
+      s|_NIXUNITS_GEN_HASH_SED_|$genHash|
       s|_NIXPKGS_REV_SED_|$nixpkgsRev|
       s|evalConfig=.*|evalConfig=$share/eval-config.nix|
       s|_NIXUNITS_PATH_SED_|$out|

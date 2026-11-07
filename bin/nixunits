@@ -18,6 +18,7 @@ usage() {
   echo "  start"
   echo "  restart|reboot <id> [-f]"
   echo "  status"
+  echo "  version"
   echo "  stop <id> [-f]"
   echo "  * : wrapper => machinectl \$@"
   echo "  h, help"
@@ -64,6 +65,8 @@ case "$ACTION" in
     _NIXUNITS_PATH_SED_/bin/status.sh "$@";;
   stop)
     _NIXUNITS_PATH_SED_/bin/stop.sh "$@";;
+  version|--version)
+    echo "nixunits $NIXUNITS_VERSION ($NIXUNITS_REV)";;
   h|help)
     usage 0;;
   *)

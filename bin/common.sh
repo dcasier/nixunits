@@ -12,6 +12,10 @@ STORE_CONTAINERS="$PATH_NIXUNITS/store/default/root"
 SYSTEM="_SYSTEM_SED_"
 UID_INV="$PATH_NIXUNITS/uidmap"
 NIXPKGS_REV="_NIXPKGS_REV_SED_"
+NIXUNITS_VERSION="_NIXUNITS_VERSION_SED_"
+NIXUNITS_REV="_NIXUNITS_REV_SED_"
+# Hash of the nixunits sources that generate the container (see nixunits.nix)
+NIXUNITS_GEN_HASH="_NIXUNITS_GEN_HASH_SED_"
 
 # Global modules (/var/lib/nixunits/modules/*.nix) are imported by every
 # container: they must invalidate the build like the config file does

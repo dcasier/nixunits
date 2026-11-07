@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }@host:
+{ config, lib, pkgs, nixunitsRev ? "unknown", ... }@host:
 
 with lib; let
   autoStartFilter = cfg:
@@ -10,6 +10,7 @@ with lib; let
   nixunits = pkgs.callPackage ./nixunits.nix {
     inherit (pkgs) lib stdenv;
     inherit pkgs;
+    rev = nixunitsRev;
   };
   systemd = import ./nix/systemd.nix { inherit config global lib pkgs nixunits; };
 in {
