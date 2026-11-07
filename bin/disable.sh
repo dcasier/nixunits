@@ -42,7 +42,10 @@ else
 fi
 
 test -f "${SYSTEMD_PATH}/multi-user.target.wants/$_unit" && rm "${SYSTEMD_PATH}/multi-user.target.wants/$_unit" || true
-test -f "${SYSTEMD_PATH}/machine-${id}.scope.wants/$_unit_net" && rm "${SYSTEMD_PATH}/machine-${id}.scope.wants/$_unit_net" || true
-test -d "${SYSTEMD_PATH}/machine-${id}.scope.wants" && rmdir "${SYSTEMD_PATH}/machine-${id}.scope.wants" || true
+# machine-<id>.scope (systemd <= 258) or <id>.scope (systemd >= 259)
+for _scope in "machine-${id}.scope" "${id}.scope"; do
+  test -f "${SYSTEMD_PATH}/${_scope}.wants/$_unit_net" && rm "${SYSTEMD_PATH}/${_scope}.wants/$_unit_net" || true
+  test -d "${SYSTEMD_PATH}/${_scope}.wants" && rmdir "${SYSTEMD_PATH}/${_scope}.wants" || true
+done
 systemctl daemon-reload
 

@@ -49,15 +49,18 @@ in
       {
         name = "${moduleName}-network@";
         value = {
-          after = [ "machine-%i.scope" ];
-          bindsTo = [ "machine-%i.scope" ];
+          # Container scope: machine-%i.scope (created by machined, systemd
+          # <= 258) or %i.scope (created by nspawn, systemd >= 259). Started
+          # by the scope (wants link set by `nixunits enable`); no BindsTo,
+          # which would require one of the two names to exist.
+          after = [ "machine-%i.scope" "%i.scope" ];
           description = "Configure network for machine %i";
           serviceConfig = {
             EnvironmentFile = "${global.unitConf "%i"}";
             ExecStart = "${nixunits}/unit/nixunit-network-config";
             Type = "oneshot";
           };
-          wantedBy = [ "machine-%i.scope" ];
+          wantedBy = [ "machine-%i.scope" "%i.scope" ];
         };
       }
       {

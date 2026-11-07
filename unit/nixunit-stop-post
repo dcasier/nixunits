@@ -20,7 +20,10 @@ interface_clean() {
 
 log_block_msg "### nixunits STOP POST"
 
-systemctl reset-failed "nixunits-network@${NAME}.service" "machine-${NAME}.scope" 2>/dev/null || true
+# machine-<id>.scope (systemd <= 258) or <id>.scope (systemd >= 259)
+for _unit in "nixunits-network@${NAME}.service" "machine-${NAME}.scope" "${NAME}.scope"; do
+  systemctl reset-failed "$_unit" 2>/dev/null || true
+done
 
 for iface in $(interfaces_list); do
   interface_clean "$iface"

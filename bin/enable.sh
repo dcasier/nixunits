@@ -41,8 +41,13 @@ else
   SYSTEMD_PATH="/etc/systemd/system"
 fi
 
-mkdir -p "${SYSTEMD_PATH}/machine-${id}.scope.wants" ${SYSTEMD_PATH}/machines.target.wants ${SYSTEMD_PATH}/multi-user.target.wants
-ln -fs /etc/systemd/system/nixunits-network@.service "${SYSTEMD_PATH}/machine-${id}.scope.wants/$_unit_net"
+mkdir -p ${SYSTEMD_PATH}/machines.target.wants ${SYSTEMD_PATH}/multi-user.target.wants
+# Scope of the container: machine-<id>.scope (created by machined, systemd
+# <= 258) or <id>.scope (created by nspawn itself, systemd >= 259)
+for _scope in "machine-${id}.scope" "${id}.scope"; do
+  mkdir -p "${SYSTEMD_PATH}/${_scope}.wants"
+  ln -fs /etc/systemd/system/nixunits-network@.service "${SYSTEMD_PATH}/${_scope}.wants/$_unit_net"
+done
 ln -fs /etc/systemd/system/nixunits@.service "${SYSTEMD_PATH}/multi-user.target.wants/$_unit"
 systemctl daemon-reload
 
