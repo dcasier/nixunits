@@ -130,5 +130,6 @@ fi
 
 if [[ "$started" != true ]] || [ "$RESTART" = true ]
 then
+  net_check "$id"
   systemctl start "$_unit"
 fi

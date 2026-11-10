@@ -240,6 +240,81 @@ external_jobs() {
   done
 }
 
+# Value of KEY in unit.conf, without evaluating it (the file belongs to the
+# container store)
+_conf_get() { sed -n "s/^[[:space:]]*$2=//p" "$1" | tail -1; }
+
+_is_private4() {
+  case "$1" in
+    10.*|192.168.*|172.1[6-9].*|172.2[0-9].*|172.3[01].*) return 0;;
+    *) return 1;;
+  esac
+}
+
+_is_private6() {
+  case "${1,,}" in
+    fc*|fd*) return 0;;
+    *) return 1;;
+  esac
+}
+
+# Masquerade/SNAT rule present in nftables for the family (4|6).
+# The output is captured first: with pipefail, `nft ... | awk` would report
+# the status of nft. Returns 2 when nft is missing, 3 when it fails.
+_nat_rule_exists() {
+  local fam=$1 out
+  command -v nft >/dev/null || return 2
+  out=$(nft list ruleset 2>/dev/null) || return 3
+  awk -v fam="$fam" '
+    /^table / { t = $2 }
+    tolower($0) ~ /masquerade|snat/ && (t == "inet" || (fam == 4 && t == "ip") || (fam == 6 && t == "ip6")) { found = 1 }
+    END { exit !found }' <<< "$out"
+}
+
+_nat_check() {  # <id> <family> <addresses>
+  local rc=0
+  _nat_rule_exists "$2" || rc=$?
+  case $rc in
+    0) ;;
+    2) echo "WARNING: $1: nft not found, IPv$2 NAT not checked (needed for:$3)" >&2;;
+    3) echo "WARNING: $1: 'nft list ruleset' failed, IPv$2 NAT not checked (needed for:$3)" >&2;;
+    *) echo "WARNING: $1: no IPv$2 masquerade/SNAT rule in nftables, needed for:$3" >&2;;
+  esac
+}
+
+# A veth interface with a private address, routed through the host, needs
+# forwarding and NAT on the host: report what is missing (changes nothing)
+net_check() {
+  local conf name ip4 ip6 hip4 hip6 r4 r6 need4="" need6=""
+  conf=$(unit_conf "$1")
+  [ -f "$conf" ] || return 0
+  r4=$(_conf_get "$conf" IP4ROUTE)
+  r6=$(_conf_get "$conf" IP6ROUTE)
+  for name in $(sed -n 's/^[[:space:]]*NIXUNITS__ETH__\(.*\)__HOST_IP4=.*/\1/p' "$conf"); do
+    ip4=$(_conf_get "$conf" "NIXUNITS__ETH__${name}__IP4")
+    ip6=$(_conf_get "$conf" "NIXUNITS__ETH__${name}__IP6")
+    hip4=$(_conf_get "$conf" "NIXUNITS__ETH__${name}__HOST_IP4")
+    hip6=$(_conf_get "$conf" "NIXUNITS__ETH__${name}__HOST_IP6")
+    if [ -n "$ip4" ] && [ -n "$hip4" ] && [ "$r4" = "${hip4%/*}" ] && _is_private4 "$ip4"; then
+      need4="$need4 ${ip4%/*}"
+    fi
+    if [ -n "$ip6" ] && [ -n "$hip6" ] && [ "$r6" = "${hip6%/*}" ] && _is_private6 "$ip6"; then
+      need6="$need6 ${ip6%/*}"
+    fi
+  done
+  if [ -n "$need4" ]; then
+    [ "$(cat /proc/sys/net/ipv4/ip_forward 2>/dev/null)" = 1 ] \
+      || echo "WARNING: $1: IPv4 forwarding disabled on the host (net.ipv4.ip_forward=0)" >&2
+    _nat_check "$1" 4 "$need4"
+  fi
+  if [ -n "$need6" ]; then
+    [ "$(cat /proc/sys/net/ipv6/conf/all/forwarding 2>/dev/null)" = 1 ] \
+      || echo "WARNING: $1: IPv6 forwarding disabled on the host (net.ipv6.conf.all.forwarding=0)" >&2
+    _nat_check "$1" 6 "$need6"
+  fi
+  return 0
+}
+
 pid_with_same_ns_find() {
   PID=$1
   TYPE=$2

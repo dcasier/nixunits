@@ -43,6 +43,11 @@ case "$ACTION" in
   disable)
     _NIXUNITS_PATH_SED_/bin/disable.sh "$@";;
   enable)
+    if grep -q '^ID=nixos' /etc/os-release; then
+      echo "WARNING: on NixOS, enable is runtime only (/run/systemd/system): lost at reboot." >&2
+      echo "         After a reboot, start with 'nixunits start <id>' (not systemctl, the network" >&2
+      echo "         would not be configured), or declare the container in the NixOS configuration." >&2
+    fi
     _NIXUNITS_PATH_SED_/bin/enable.sh "$@";;
   gc)
     _NIXUNITS_PATH_SED_/bin/gc.sh "$@";;
