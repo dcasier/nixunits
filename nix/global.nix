@@ -25,6 +25,16 @@ let
         Names containing underscores are not allowed. Please rename container '${name}'
       '';
     }
+    {
+      # these settings would be applied to the host network namespace
+      assertion = !cfg.network.host || (
+        cfg.network.interfaces == {} && cfg.network.netns_path == ""
+        && cfg.network.nft == "" && cfg.network.ip4route == "" && cfg.network.ip6route == "");
+      message = ''
+        Container '${name}': network.host cannot be combined with
+        network.interfaces, netns_path, nft, ip4route or ip6route.
+      '';
+    }
   ];
 
   cfgUnit = name: cfg: security.cfgValid cfg;
@@ -127,8 +137,10 @@ let
   _conf_unit = name: cfg: let
       interfaces = cfg.network.interfaces or {};
 
-      isNetPriv = !(cfg ? network);
       isNetNS = cfg ? network && cfg.network ? netns_path && cfg.network.netns_path != "";
+      # No interface, no namespace path: private network (loopback only),
+      # unless the host network is explicitly requested (network.host)
+      isNetPriv = interfaces == {} && !isNetNS && !cfg.network.host;
 
       isVeth = iface: iface.hostIp4 or "" != "" || iface.hostIp6 or "" != "";
       vethEnabled = builtins.any isVeth (builtins.attrValues interfaces);
@@ -359,6 +371,15 @@ in with lib; {
                         };
                       };
                     });
+                  };
+                  host = mkOption {
+                    default = false;
+                    description = ''
+                      Share the network namespace of the host (no private
+                      network). Without it, a container with no interface
+                      only has a loopback.
+                    '';
+                    type = bool;
                   };
                   ip4route = mkOption {
                     default = "";

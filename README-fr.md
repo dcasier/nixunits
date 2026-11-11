@@ -342,6 +342,9 @@ nixunits <action> [options]
 ## Sécurité déclarative
 
 * User Namespace activé sauf `netns_path` spécifié
+* Réseau : un conteneur sans interface a un réseau privé (loopback seul) ;
+  `network.host = true;` partage à la place le réseau de l'hôte (non
+  combinable avec des interfaces, `netns_path`, `nft` ou des routes)
 * Capabilities explicites
 
 ```nix

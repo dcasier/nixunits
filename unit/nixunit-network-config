@@ -113,7 +113,7 @@ fi
 
 if [ -z "$(interfaces_list)" ]
 then
-  log_block_msg "### Private network without IP (exit)"
+  log_block_msg "### No interface to configure"
 else
   for iface in $(interfaces_list); do
     interface_env "$iface"

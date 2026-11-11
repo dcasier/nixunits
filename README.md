@@ -342,6 +342,9 @@ nixunits <action> [options]
 ## Declarative security
 
 * User Namespace enabled unless `netns_path` is specified
+* Network: a container without interface gets a private network (loopback
+  only); `network.host = true;` shares the host network namespace instead
+  (not combinable with interfaces, `netns_path`, `nft` or routes)
 * Explicit capabilities
 
 ```nix
