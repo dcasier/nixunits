@@ -106,6 +106,9 @@ let
           '';
         in {
           ExecStart = "${waitNetReady}";
+          # stay active: restarting a service that wants this unit must not
+          # run it again (/run/net-ready is gone, it would wait forever)
+          RemainAfterExit = true;
           Type = "oneshot";
         };
       };
