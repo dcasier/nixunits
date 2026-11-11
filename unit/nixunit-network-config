@@ -89,6 +89,8 @@ interface_host_set() {
 }
 
 context_set() {
+  # per interface: must not keep the host side of a previous veth
+  HOST_INTERFACE=""
   if { { [ -n "$IP4" ] && [ -n "$HOST_IP4" ]; } || { [ -n "$IP6" ] && [ -n "$HOST_IP6" ]; }; }; then
     if_infos=$(container_exec "ip -j link" | jq '.[] | select(.link_index != null)')
     host_interface_id=$(echo "$if_infos" | jq '.link_index')
