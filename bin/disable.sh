@@ -5,7 +5,10 @@ set -euo pipefail
 
 usage() {
   echo "Usage : nixunits disable <container id> [options]"
+  echo "Disable the start at boot. The network trigger is kept: a container"
+  echo "still running must get its network when it restarts."
   echo "Available options:"
+  echo "  -a  also remove the network trigger (container deletion)"
   echo "  -h  help"
   echo
 
@@ -22,8 +25,11 @@ test "$id" = "--help" && usage 0
 shift
 id_check "$id"
 
-while getopts "h" opt; do
+ALL=false
+while getopts "ah" opt; do
   case $opt in
+    a)
+      ALL=true;;
     h)
       usage;;
     \?)
@@ -42,10 +48,12 @@ else
 fi
 
 test -f "${SYSTEMD_PATH}/multi-user.target.wants/$_unit" && rm "${SYSTEMD_PATH}/multi-user.target.wants/$_unit" || true
-# machine-<id>.scope (systemd <= 258) or <id>.scope (systemd >= 259)
-for _scope in "machine-${id}.scope" "${id}.scope"; do
-  test -f "${SYSTEMD_PATH}/${_scope}.wants/$_unit_net" && rm "${SYSTEMD_PATH}/${_scope}.wants/$_unit_net" || true
-  test -d "${SYSTEMD_PATH}/${_scope}.wants" && rmdir "${SYSTEMD_PATH}/${_scope}.wants" || true
-done
+if [ "$ALL" = true ]; then
+  # machine-<id>.scope (systemd <= 258) or <id>.scope (systemd >= 259)
+  for _scope in "machine-${id}.scope" "${id}.scope"; do
+    test -f "${SYSTEMD_PATH}/${_scope}.wants/$_unit_net" && rm "${SYSTEMD_PATH}/${_scope}.wants/$_unit_net" || true
+    test -d "${SYSTEMD_PATH}/${_scope}.wants" && rmdir "${SYSTEMD_PATH}/${_scope}.wants" || true
+  done
+fi
 systemctl daemon-reload
 

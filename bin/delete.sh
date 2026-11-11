@@ -62,7 +62,7 @@ then
   fi
 fi
 
-_NIXUNITS_PATH_SED_/bin/disable.sh "$id"
+_NIXUNITS_PATH_SED_/bin/disable.sh "$id" -a
 systemctl stop "nixunits@$id.service" "nixunits-network@$id.service" 2>/dev/null || true
 systemctl reset-failed "nixunits@$id.service" "nixunits-network@$id.service" 2>/dev/null || true
 
